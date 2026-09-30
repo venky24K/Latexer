@@ -1,0 +1,14 @@
+{
+  "name": "latexer-workspace",
+  "version": "1.0.0",
+  "description": "Latexer - Full-Stack Overleaf Clone",
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,green\" \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "build:client": "npm --prefix client run build",
+    "build:server": "npm --prefix server run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
