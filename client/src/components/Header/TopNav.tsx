@@ -1,5 +1,6 @@
 import React from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
+import { useAiStore } from '../../store/useAiStore';
 import {
   Play,
   Download,
@@ -11,6 +12,7 @@ import {
   AlertTriangle,
   XCircle,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 
 export const TopNav: React.FC = () => {
@@ -35,6 +37,8 @@ export const TopNav: React.FC = () => {
     downloadPdf,
     pdfUrl,
   } = useProjectStore();
+
+  const { aiSidebarOpen, toggleAiSidebar } = useAiStore();
 
   const isCompiling = compilationState === 'compiling';
   const hasErrors = errors.length > 0;
@@ -157,6 +161,16 @@ export const TopNav: React.FC = () => {
 
       {/* Right: Actions, Downloads, Templates & Host Status */}
       <div className="nav-right">
+        {/* Gemini AI Copilot Trigger */}
+        <button
+          className={`nav-btn ai-btn ${aiSidebarOpen ? 'active' : ''}`}
+          onClick={() => toggleAiSidebar()}
+          title="Toggle Gemini AI Copilot Sidebar"
+        >
+          <Sparkles size={14} className="text-blue" />
+          <span>AI Copilot</span>
+        </button>
+
         {/* Template Gallery Trigger */}
         <button
           className="nav-btn secondary"

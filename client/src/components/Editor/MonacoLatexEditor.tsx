@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import Editor, { type Monaco, type OnMount } from '@monaco-editor/react';
 import { useProjectStore } from '../../store/useProjectStore';
-import { FileText, Image as ImageIcon } from 'lucide-react';
+import { useAiStore } from '../../store/useAiStore';
+import { InlineCommandPalette } from '../AI/InlineCommandPalette';
+import { FileText, Image as ImageIcon, Sparkles } from 'lucide-react';
 
 export const MonacoLatexEditor: React.FC = () => {
   const {
@@ -14,6 +16,8 @@ export const MonacoLatexEditor: React.FC = () => {
     autoCompile,
     registerJumpToLine,
   } = useProjectStore();
+
+  const { openInlineCommand, registerEditorActions } = useAiStore();
 
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -165,6 +169,47 @@ export const MonacoLatexEditor: React.FC = () => {
       compileNow();
     });
 
+    // Keybinding: Cmd+K / Ctrl+K -> Gemini Inline Command Palette
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, () => {
+      const selection = editor.getSelection();
+      const model = editor.getModel();
+      let selectedText = '';
+      if (selection && model) {
+        selectedText = model.getValueInRange(selection);
+      }
+      openInlineCommand(selectedText, selection);
+    });
+
+    // Register editor actions for AI insertions
+    registerEditorActions(
+      (text: string) => {
+        const selection = editor.getSelection();
+        if (selection) {
+          editor.executeEdits('ai-copilot', [
+            {
+              range: selection,
+              text,
+              forceMoveMarkers: true,
+            },
+          ]);
+          editor.focus();
+        }
+      },
+      (replacement: string, range?: any) => {
+        const targetRange = range || editor.getSelection();
+        if (targetRange) {
+          editor.executeEdits('ai-inline-edit', [
+            {
+              range: targetRange,
+              text: replacement,
+              forceMoveMarkers: true,
+            },
+          ]);
+          editor.focus();
+        }
+      }
+    );
+
     // Register jump to line action
     registerJumpToLine((line: number) => {
       if (editor) {
@@ -253,11 +298,21 @@ export const MonacoLatexEditor: React.FC = () => {
           <span>{activeFilePath}</span>
         </div>
         <div className="editor-actions-hint">
-          <span>⌘↵ to compile</span>
+          <button
+            type="button"
+            className="ai-hint-badge"
+            onClick={() => openInlineCommand('', null)}
+            title="Open Gemini AI Inline Command Palette (Cmd+K)"
+          >
+            <Sparkles size={11} className="text-blue" />
+            <span>⌘K AI Edit</span>
+          </button>
+          <span className="compile-hint-badge">⌘↵ to compile</span>
         </div>
       </div>
 
       <div className="editor-wrapper">
+        <InlineCommandPalette />
         <Editor
           height="100%"
           language={language}
