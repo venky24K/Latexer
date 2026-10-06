@@ -12,8 +12,7 @@ export const InlineCommandPalette: React.FC = () => {
     executeInlineEdit,
     isInlineLoading,
     inlineSelection,
-    apiKey,
-    serverConfigured,
+    provider,
     setSettingsModalOpen,
   } = useAiStore();
 
@@ -21,7 +20,7 @@ export const InlineCommandPalette: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const activeFile = files[activeFilePath];
-  const isKeyConfigured = !!apiKey || serverConfigured;
+  const isKeyConfigured = true;
 
   useEffect(() => {
     if (inlineOpen) {
@@ -61,7 +60,7 @@ export const InlineCommandPalette: React.FC = () => {
         <div className="inline-palette-header">
           <div className="inline-badge">
             <Sparkles size={14} className="text-blue" />
-            <span>Gemini Inline Edit</span>
+            <span>{provider === 'groq' ? 'Groq AI Edit' : 'Gemini AI Edit'}</span>
             <span className="kbd-shortcut">⌘K</span>
           </div>
 

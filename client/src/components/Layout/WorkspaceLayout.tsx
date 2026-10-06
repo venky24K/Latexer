@@ -1,30 +1,32 @@
 import React, { useEffect } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
+import { ActivityBar } from '../Sidebar/ActivityBar';
 import { FileTree } from '../Sidebar/FileTree';
+import { SearchPanel } from '../Sidebar/SearchPanel';
+import { OutlinePanel } from '../Sidebar/OutlinePanel';
+import { AiPanel } from '../Sidebar/AiPanel';
 import { MonacoLatexEditor } from '../Editor/MonacoLatexEditor';
 import { PdfViewer } from '../Preview/PdfViewer';
 import { LogsDrawer } from '../Logs/LogsDrawer';
-import { AiSidebar } from '../AI/AiSidebar';
 import { useLayoutStore } from '../../store/useLayoutStore';
 import { useProjectStore } from '../../store/useProjectStore';
-import { PanelLeftOpen, FileText } from 'lucide-react';
 
 export const WorkspaceLayout: React.FC = () => {
   const {
     sidebarCollapsed,
+    activeSidebarTab,
+    setActiveSidebarTab,
     toggleSidebar,
     viewMode,
     panelSizes,
     setPanelSizes,
   } = useLayoutStore();
 
-  const { files, toggleLogsDrawer } = useProjectStore();
-  const fileCount = Object.keys(files).length;
+  const { toggleLogsDrawer } = useProjectStore();
 
-  // Global keyboard shortcuts: ⌘B / Ctrl+B for Sidebar, ⌘J / Ctrl+J for Logs Drawer
+  // Keyboard shortcuts: ⌘B (Toggle Sidebar), ⌘⇧F (Search), ⌘⇧E (Explorer), ⌘J (Logs)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check if Ctrl or Cmd is pressed
       const isMeta = e.metaKey || e.ctrlKey;
       if (!isMeta) return;
 
@@ -32,6 +34,18 @@ export const WorkspaceLayout: React.FC = () => {
       if (e.key.toLowerCase() === 'b' && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         toggleSidebar();
+      }
+
+      // ⌘⇧F / Ctrl+Shift+F -> Open Search in Files
+      if (e.key.toLowerCase() === 'f' && e.shiftKey) {
+        e.preventDefault();
+        setActiveSidebarTab('search');
+      }
+
+      // ⌘⇧E / Ctrl+Shift+E -> Open Project Explorer
+      if (e.key.toLowerCase() === 'e' && e.shiftKey) {
+        e.preventDefault();
+        setActiveSidebarTab('files');
       }
 
       // ⌘J / Ctrl+J -> Toggle Logs & Diagnostics Drawer
@@ -43,31 +57,26 @@ export const WorkspaceLayout: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleSidebar, toggleLogsDrawer]);
+  }, [toggleSidebar, setActiveSidebarTab, toggleLogsDrawer]);
+
+  const renderActiveSidebarContent = () => {
+    switch (activeSidebarTab) {
+      case 'search':
+        return <SearchPanel />;
+      case 'ai':
+        return <AiPanel />;
+      case 'outline':
+        return <OutlinePanel />;
+      case 'files':
+      default:
+        return <FileTree />;
+    }
+  };
 
   return (
     <main className="latexer-workspace">
-      {/* Collapsed Slim Sidebar Rail (shows when primary sidebar is collapsed in split mode) */}
-      {sidebarCollapsed && viewMode === 'split' && (
-        <aside className="collapsed-sidebar-rail" title="Expand Project Files (⌘B)">
-          <button
-            className="rail-btn toggle"
-            onClick={() => toggleSidebar(true)}
-            title="Expand Project Files (⌘B)"
-          >
-            <PanelLeftOpen size={15} />
-          </button>
-
-          <button
-            className="rail-btn file-counter"
-            onClick={() => toggleSidebar(true)}
-            title={`${fileCount} files in project`}
-          >
-            <FileText size={14} />
-            <span className="rail-badge">{fileCount}</span>
-          </button>
-        </aside>
-      )}
+      {/* Far-Left Activity Bar (VS Code style vertical icon rail) */}
+      <ActivityBar />
 
       {/* Primary Resizable Workspace Panel Group */}
       <Group
@@ -80,7 +89,7 @@ export const WorkspaceLayout: React.FC = () => {
           }
         }}
       >
-        {/* Panel 1: Project File Tree */}
+        {/* Panel 1: Multi-View Primary Sidebar (Explorer, Search, AI, Outline) */}
         {!sidebarCollapsed && viewMode === 'split' && (
           <>
             <Panel
@@ -90,7 +99,7 @@ export const WorkspaceLayout: React.FC = () => {
               maxSize="40%"
               className="panel-sidebar"
             >
-              <FileTree />
+              {renderActiveSidebarContent()}
             </Panel>
 
             <Separator className="resize-handle" />
@@ -127,9 +136,6 @@ export const WorkspaceLayout: React.FC = () => {
 
       {/* Expandable Bottom Drawer for Compiler Diagnostics & Raw Logs */}
       <LogsDrawer />
-
-      {/* Gemini AI Copilot Sidebar */}
-      <AiSidebar />
     </main>
   );
 };

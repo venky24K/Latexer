@@ -1,13 +1,26 @@
 import { create } from 'zustand';
-import { type ChatMessage, fetchAiStatus, sendAiChatRequest, sendAiInlineEditRequest } from '../services/aiApi';
+import {
+  type ChatMessage,
+  type SupportedModel,
+  fetchAiStatus,
+  sendAiChatRequest,
+  sendAiInlineEditRequest,
+} from '../services/aiApi';
+
+export type AiProvider = 'groq' | 'gemini';
 
 interface AiState {
-  apiKey: string;
+  provider: AiProvider;
+  groqKey: string;
+  geminiKey: string;
   selectedModel: string;
   serverConfigured: boolean;
+  hasGroq: boolean;
+  hasGemini: boolean;
+  supportedModels: SupportedModel[];
   aiSidebarOpen: boolean;
   settingsModalOpen: boolean;
-  
+
   // Chat
   chatMessages: ChatMessage[];
   isChatLoading: boolean;
@@ -26,7 +39,9 @@ interface AiState {
   replaceSelectionFn: ((replacement: string, range?: any) => void) | null;
 
   // Actions
-  setApiKey: (key: string) => void;
+  setProvider: (provider: AiProvider) => void;
+  setGroqKey: (key: string) => void;
+  setGeminiKey: (key: string) => void;
   setSelectedModel: (model: string) => void;
   toggleAiSidebar: (open?: boolean) => void;
   setSettingsModalOpen: (open: boolean) => void;
@@ -44,13 +59,34 @@ interface AiState {
   initAi: () => Promise<void>;
 }
 
-const LOCAL_STORAGE_KEY = 'latexer_gemini_api_key';
-const LOCAL_MODEL_KEY = 'latexer_gemini_model';
+const LOCAL_GROQ_KEY = 'latexer_groq_api_key';
+const LOCAL_GEMINI_KEY = 'latexer_gemini_api_key';
+const LOCAL_MODEL_KEY = 'latexer_ai_model';
+const LOCAL_PROVIDER_KEY = 'latexer_ai_provider';
+
+const DEFAULT_GROQ_KEY = '';
+const DEFAULT_MODEL = 'openai/gpt-oss-120b';
+
+const INITIAL_SUPPORTED_MODELS: SupportedModel[] = [
+  { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B (Groq • Deep Grammar & Research Writing)', provider: 'groq' },
+  { id: 'qwen/qwen3.8-27b', name: 'Qwen 3.8 27B (Groq • High-Speed Grammar & Edits)', provider: 'groq' },
+  { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B (Groq • Instant Lightweight)', provider: 'groq' },
+  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Google)', provider: 'gemini' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Google)', provider: 'gemini' },
+  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Google)', provider: 'gemini' },
+];
 
 export const useAiStore = create<AiState>((set, get) => ({
-  apiKey: typeof window !== 'undefined' ? localStorage.getItem(LOCAL_STORAGE_KEY) || '' : '',
-  selectedModel: typeof window !== 'undefined' ? localStorage.getItem(LOCAL_MODEL_KEY) || 'gemini-1.5-flash' : 'gemini-1.5-flash',
-  serverConfigured: false,
+  provider: (typeof window !== 'undefined'
+    ? (localStorage.getItem(LOCAL_PROVIDER_KEY) as AiProvider) || 'groq'
+    : 'groq'),
+  groqKey: typeof window !== 'undefined' ? localStorage.getItem(LOCAL_GROQ_KEY) || DEFAULT_GROQ_KEY : DEFAULT_GROQ_KEY,
+  geminiKey: typeof window !== 'undefined' ? localStorage.getItem(LOCAL_GEMINI_KEY) || '' : '',
+  selectedModel: typeof window !== 'undefined' ? localStorage.getItem(LOCAL_MODEL_KEY) || DEFAULT_MODEL : DEFAULT_MODEL,
+  serverConfigured: true,
+  hasGroq: true,
+  hasGemini: false,
+  supportedModels: INITIAL_SUPPORTED_MODELS,
   aiSidebarOpen: true,
   settingsModalOpen: false,
 
@@ -58,15 +94,15 @@ export const useAiStore = create<AiState>((set, get) => ({
     {
       id: 'welcome',
       role: 'assistant',
-      content: `Hello! I am your **Latexer AI Copilot** powered by Google Gemini. 
-I can help you:
-- 📝 **Polish and rewrite** sections in formal academic tone
-- 📐 **Generate equations** (matrices, integrals, systems)
-- 📊 **Create complex tables** with \`booktabs\`
-- 🎨 **Draft TikZ vector graphics** and diagrams
-- 🔍 **Fix compilation errors** and explain LaTeX syntax
+      content: `Hello! I am your **Latexer AI Copilot** powered by **Groq LPU Acceleration** & Google Gemini. 
+I specialize in:
+- ✍️ **Impeccable Academic English Grammar**: Fixing phrasing, tense consistency, and tone
+- 📐 **LaTeX Mathematical Typesetting**: Equations, matrices, alignments, and symbols
+- 📊 **Publication Tables**: Beautiful \`booktabs\` tables with proper column specs
+- 🎨 **TikZ Vector Diagrams**: Mind maps, flowcharts, and geometric schemas
+- 🔍 **Compiler Error Fixing**: Instant diagnosis and 1-click repairs
 
-How can I assist your document today?`,
+How can I assist your manuscript today?`,
       timestamp: Date.now(),
     },
   ],
@@ -80,14 +116,28 @@ How can I assist your document today?`,
   insertAtCursorFn: null,
   replaceSelectionFn: null,
 
-  setApiKey: (key: string) => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, key);
-    set({ apiKey: key });
+  setProvider: (provider) => {
+    localStorage.setItem(LOCAL_PROVIDER_KEY, provider);
+    const defaultForProvider = provider === 'groq' ? 'openai/gpt-oss-120b' : 'gemini-1.5-flash';
+    set({ provider, selectedModel: defaultForProvider });
+    localStorage.setItem(LOCAL_MODEL_KEY, defaultForProvider);
   },
 
-  setSelectedModel: (model: string) => {
+  setGroqKey: (key) => {
+    localStorage.setItem(LOCAL_GROQ_KEY, key);
+    set({ groqKey: key });
+  },
+
+  setGeminiKey: (key) => {
+    localStorage.setItem(LOCAL_GEMINI_KEY, key);
+    set({ geminiKey: key });
+  },
+
+  setSelectedModel: (model) => {
     localStorage.setItem(LOCAL_MODEL_KEY, model);
-    set({ selectedModel: model });
+    const provider: AiProvider = model.startsWith('gemini-') ? 'gemini' : 'groq';
+    localStorage.setItem(LOCAL_PROVIDER_KEY, provider);
+    set({ selectedModel: model, provider });
   },
 
   toggleAiSidebar: (open) => {
@@ -97,7 +147,8 @@ How can I assist your document today?`,
   setSettingsModalOpen: (open) => set({ settingsModalOpen: open }),
 
   sendChatMessage: async (prompt, documentContext, selectedText) => {
-    const { apiKey, selectedModel, chatMessages } = get();
+    const { provider, groqKey, geminiKey, selectedModel, chatMessages } = get();
+    const activeKey = provider === 'groq' ? groqKey : geminiKey;
 
     const userMessage: ChatMessage = {
       id: String(Date.now()),
@@ -112,7 +163,6 @@ How can I assist your document today?`,
     });
 
     try {
-      // Build conversation history for multi-turn chat
       const history = chatMessages
         .filter((m) => m.id !== 'welcome')
         .map((m) => ({
@@ -126,7 +176,8 @@ How can I assist your document today?`,
         documentContext,
         selectedText,
         model: selectedModel,
-        apiKey: apiKey || undefined,
+        apiKey: activeKey || undefined,
+        provider,
       });
 
       const assistantMessage: ChatMessage = {
@@ -144,7 +195,7 @@ How can I assist your document today?`,
       const errorMessage: ChatMessage = {
         id: String(Date.now() + 1),
         role: 'assistant',
-        content: `⚠️ **AI Error**: ${err.message || 'Unable to communicate with Gemini.'}\n\nPlease verify your API key in **AI Settings** (gear icon).`,
+        content: `⚠️ **AI Error (${provider.toUpperCase()})**: ${err.message || 'Unable to communicate with model.'}\n\nPlease check your key in **AI Settings** (gear icon).`,
         timestamp: Date.now(),
       };
 
@@ -189,9 +240,10 @@ How can I assist your document today?`,
   setInlineInstruction: (text) => set({ inlineInstruction: text }),
 
   executeInlineEdit: async (documentContext) => {
-    const { inlineInstruction, inlineSelection, apiKey, selectedModel, replaceSelectionFn } = get();
+    const { inlineInstruction, inlineSelection, provider, groqKey, geminiKey, selectedModel, replaceSelectionFn } = get();
     if (!inlineInstruction.trim() || !inlineSelection) return;
 
+    const activeKey = provider === 'groq' ? groqKey : geminiKey;
     set({ isInlineLoading: true });
 
     try {
@@ -200,7 +252,8 @@ How can I assist your document today?`,
         selectedText: inlineSelection.selectedText,
         surroundingContext: documentContext,
         model: selectedModel,
-        apiKey: apiKey || undefined,
+        apiKey: activeKey || undefined,
+        provider,
       });
 
       if (replaceSelectionFn && replacement) {
@@ -214,7 +267,7 @@ How can I assist your document today?`,
         isInlineLoading: false,
       });
     } catch (err: any) {
-      alert(`AI Inline Edit failed: ${err.message}`);
+      alert(`AI Inline Edit failed (${provider}): ${err.message}`);
       set({ isInlineLoading: false });
     }
   },
@@ -236,7 +289,12 @@ How can I assist your document today?`,
   initAi: async () => {
     try {
       const status = await fetchAiStatus();
-      set({ serverConfigured: status.configured });
+      set({
+        serverConfigured: status.configured,
+        hasGroq: status.hasGroq,
+        hasGemini: status.hasGemini,
+        supportedModels: status.supportedModels && status.supportedModels.length > 0 ? status.supportedModels : INITIAL_SUPPORTED_MODELS,
+      });
     } catch (err) {
       console.warn('AI status check failed:', err);
     }

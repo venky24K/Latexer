@@ -1,7 +1,16 @@
+export interface SupportedModel {
+  id: string;
+  name: string;
+  provider: 'groq' | 'gemini';
+}
+
 export interface AiStatus {
   configured: boolean;
+  hasGroq: boolean;
+  hasGemini: boolean;
   defaultModel: string;
-  supportedModels: string[];
+  defaultProvider: 'groq' | 'gemini';
+  supportedModels: SupportedModel[];
 }
 
 export interface ChatMessage {
@@ -24,6 +33,7 @@ export async function sendAiChatRequest(params: {
   selectedText?: string;
   model?: string;
   apiKey?: string;
+  provider?: 'groq' | 'gemini';
 }): Promise<string> {
   const res = await fetch('/api/ai/chat', {
     method: 'POST',
@@ -46,6 +56,7 @@ export async function sendAiInlineEditRequest(params: {
   surroundingContext?: string;
   model?: string;
   apiKey?: string;
+  provider?: 'groq' | 'gemini';
 }): Promise<string> {
   const res = await fetch('/api/ai/inline-edit', {
     method: 'POST',

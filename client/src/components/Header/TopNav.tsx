@@ -1,6 +1,5 @@
 import React from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
-import { useAiStore } from '../../store/useAiStore';
 import { useLayoutStore } from '../../store/useLayoutStore';
 import {
   Play,
@@ -10,12 +9,8 @@ import {
   Terminal,
   Cpu,
   CheckCircle2,
-  AlertTriangle,
   XCircle,
   Loader2,
-  Sparkles,
-  PanelLeftClose,
-  PanelLeftOpen,
   Columns2,
   Code2,
   BookOpen,
@@ -38,17 +33,12 @@ export const TopNav: React.FC = () => {
     toggleLogsDrawer,
     logsDrawerOpen,
     setTemplateModalOpen,
-    setHostSetupModalOpen,
-    engineStatus,
     exportZip,
     downloadPdf,
     pdfUrl,
   } = useProjectStore();
 
-  const { aiSidebarOpen, toggleAiSidebar } = useAiStore();
   const {
-    sidebarCollapsed,
-    toggleSidebar,
     viewMode,
     setViewMode,
     resetLayout,
@@ -69,14 +59,6 @@ export const TopNav: React.FC = () => {
           <span className="brand-title">Latexer</span>
         </div>
 
-        {/* Sidebar Toggle Button (⌘B) */}
-        <button
-          className={`btn-icon-nav sidebar-toggle ${!sidebarCollapsed ? 'active' : ''}`}
-          onClick={() => toggleSidebar()}
-          title={sidebarCollapsed ? 'Show Project Files (⌘B)' : 'Hide Project Files (⌘B)'}
-        >
-          {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-        </button>
 
         <div className="project-title-container">
           <input
@@ -216,16 +198,6 @@ export const TopNav: React.FC = () => {
           </button>
         </div>
 
-        {/* Gemini AI Copilot Trigger */}
-        <button
-          className={`nav-btn ai-btn ${aiSidebarOpen ? 'active' : ''}`}
-          onClick={() => toggleAiSidebar()}
-          title="Toggle Gemini AI Copilot Sidebar"
-        >
-          <Sparkles size={14} className="text-blue" />
-          <span>AI Copilot</span>
-        </button>
-
         {/* Template Gallery Trigger */}
         <button
           className="nav-btn secondary"
@@ -234,25 +206,6 @@ export const TopNav: React.FC = () => {
         >
           <Layers size={14} />
           <span>Templates</span>
-        </button>
-
-        {/* Host TeX Engine Check Indicator */}
-        <button
-          className={`nav-btn status-btn ${engineStatus?.hasAnyEngine ? 'engine-ok' : 'engine-missing'}`}
-          onClick={() => setHostSetupModalOpen(true)}
-          title={engineStatus?.hasAnyEngine ? `LaTeX Engine: ${engineStatus.recommendedEngine}` : 'No LaTeX engine found - click for quick install'}
-        >
-          {engineStatus?.hasAnyEngine ? (
-            <>
-              <span className="indicator-dot green" />
-              <span>{engineStatus.recommendedEngine}</span>
-            </>
-          ) : (
-            <>
-              <AlertTriangle size={13} className="amber-color" />
-              <span>Setup TeX</span>
-            </>
-          )}
         </button>
 
         {/* Download PDF button */}

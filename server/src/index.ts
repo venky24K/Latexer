@@ -2,7 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import { compileWorkspace, detectEngines, pdfCache } from './compiler.js';
 import { CompileRequest } from './types.js';
-import { chatWithGemini, inlineEditWithGemini } from './aiService.js';
+import { dispatchAiChat, dispatchAiInlineEdit } from './aiService.js';
+
+// Load .env automatically if present
+try {
+  if (typeof process.loadEnvFile === 'function') {
+    process.loadEnvFile();
+  }
+} catch {
+  // .env file might not exist or already loaded
+}
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -51,24 +60,37 @@ app.get('/api/pdf/:buildId', (req, res) => {
   res.send(cached.buffer);
 });
 
-// AI Endpoints
+// AI Endpoints (Groq & Gemini)
 app.get('/api/ai/status', (req, res) => {
-  const hasEnvKey = !!process.env.GEMINI_API_KEY;
+  const hasGroq = !!process.env.GROQ_API_KEY;
+  const hasGemini = !!process.env.GEMINI_API_KEY;
+
   res.json({
-    configured: hasEnvKey,
-    defaultModel: 'gemini-1.5-flash',
-    supportedModels: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'],
+    configured: hasGroq || hasGemini,
+    hasGroq,
+    hasGemini,
+    defaultModel: hasGroq ? 'openai/gpt-oss-120b' : 'gemini-1.5-flash',
+    defaultProvider: hasGroq ? 'groq' : 'gemini',
+    supportedModels: [
+      { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B (Groq • Deep Grammar & Research Writing)', provider: 'groq' },
+      { id: 'qwen/qwen3.8-27b', name: 'Qwen 3.8 27B (Groq • High-Speed Grammar & Edits)', provider: 'groq' },
+      { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B (Groq • Instant Lightweight)', provider: 'groq' },
+      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Google)', provider: 'gemini' },
+      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Google)', provider: 'gemini' },
+      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Google)', provider: 'gemini' },
+    ],
   });
 });
 
 app.post('/api/ai/chat', async (req, res) => {
   try {
-    const { prompt, history, documentContext, selectedText, model, apiKey } = req.body;
+    const { prompt, history, documentContext, selectedText, model, apiKey, provider } = req.body;
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    const reply = await chatWithGemini({
+    const reply = await dispatchAiChat({
+      provider,
       apiKey,
       model,
       prompt,
@@ -86,12 +108,13 @@ app.post('/api/ai/chat', async (req, res) => {
 
 app.post('/api/ai/inline-edit', async (req, res) => {
   try {
-    const { instruction, selectedText, surroundingContext, model, apiKey } = req.body;
+    const { instruction, selectedText, surroundingContext, model, apiKey, provider } = req.body;
     if (!instruction || !selectedText) {
       return res.status(400).json({ error: 'Instruction and selectedText are required' });
     }
 
-    const replacement = await inlineEditWithGemini({
+    const replacement = await dispatchAiInlineEdit({
+      provider,
       apiKey,
       model,
       instruction,

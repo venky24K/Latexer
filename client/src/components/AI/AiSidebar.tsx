@@ -29,7 +29,7 @@ export const AiSidebar: React.FC = () => {
     setSettingsModalOpen,
     selectedModel,
     insertAtCursor,
-    apiKey,
+    provider,
     serverConfigured,
   } = useAiStore();
 
@@ -42,7 +42,7 @@ export const AiSidebar: React.FC = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const activeFile = files[activeFilePath];
-  const isKeyConfigured = !!apiKey || serverConfigured;
+  const isKeyConfigured = serverConfigured;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -150,9 +150,9 @@ export const AiSidebar: React.FC = () => {
           <div className="ai-spark-icon">
             <Sparkles size={15} />
           </div>
-          <span className="ai-title-text">Gemini Copilot</span>
+          <span className="ai-title-text">{provider === 'groq' ? 'Groq Copilot' : 'Gemini Copilot'}</span>
           <span className="ai-model-pill" title={`Active Model: ${selectedModel}`}>
-            {selectedModel.replace('gemini-', '')}
+            {selectedModel.includes('/') ? selectedModel.split('/')[1] : selectedModel.replace('gemini-', '')}
           </span>
         </div>
 

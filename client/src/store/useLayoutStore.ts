@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 
 export type ViewMode = 'split' | 'editor-only' | 'preview-only';
+export type SidebarTab = 'files' | 'search' | 'ai' | 'outline';
 
 interface LayoutPreferences {
   sidebarCollapsed: boolean;
+  activeSidebarTab: SidebarTab;
   viewMode: ViewMode;
   panelSizes: [number, number, number];
 }
@@ -12,6 +14,8 @@ interface LayoutState extends LayoutPreferences {
   // Actions
   toggleSidebar: (force?: boolean) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  setActiveSidebarTab: (tab: SidebarTab) => void;
+  toggleSidebarTab: (tab: SidebarTab) => void;
   setViewMode: (mode: ViewMode) => void;
   setPanelSizes: (sizes: [number, number, number]) => void;
   resetLayout: () => void;
@@ -37,6 +41,9 @@ function loadSavedPreferences(): LayoutPreferences {
       const parsed = JSON.parse(raw);
       return {
         sidebarCollapsed: Boolean(parsed.sidebarCollapsed),
+        activeSidebarTab: (['files', 'search', 'ai', 'outline'].includes(parsed.activeSidebarTab)
+          ? parsed.activeSidebarTab
+          : 'files') as SidebarTab,
         viewMode: (['split', 'editor-only', 'preview-only'].includes(parsed.viewMode)
           ? parsed.viewMode
           : 'split') as ViewMode,
@@ -48,6 +55,7 @@ function loadSavedPreferences(): LayoutPreferences {
   }
   return {
     sidebarCollapsed: false,
+    activeSidebarTab: 'files',
     viewMode: 'split',
     panelSizes: DEFAULT_SIZES,
   };
@@ -65,6 +73,7 @@ const initialPrefs = loadSavedPreferences();
 
 export const useLayoutStore = create<LayoutState>((set) => ({
   sidebarCollapsed: initialPrefs.sidebarCollapsed,
+  activeSidebarTab: initialPrefs.activeSidebarTab,
   viewMode: initialPrefs.viewMode,
   panelSizes: initialPrefs.panelSizes,
 
@@ -73,6 +82,7 @@ export const useLayoutStore = create<LayoutState>((set) => ({
       const nextCollapsed = force !== undefined ? !force : !state.sidebarCollapsed;
       const updated: LayoutPreferences = {
         sidebarCollapsed: nextCollapsed,
+        activeSidebarTab: state.activeSidebarTab,
         viewMode: state.viewMode,
         panelSizes: state.panelSizes,
       };
@@ -85,6 +95,7 @@ export const useLayoutStore = create<LayoutState>((set) => ({
     set((state) => {
       const updated: LayoutPreferences = {
         sidebarCollapsed: collapsed,
+        activeSidebarTab: state.activeSidebarTab,
         viewMode: state.viewMode,
         panelSizes: state.panelSizes,
       };
@@ -93,10 +104,47 @@ export const useLayoutStore = create<LayoutState>((set) => ({
     });
   },
 
+  setActiveSidebarTab: (tab) => {
+    set((state) => {
+      const updated: LayoutPreferences = {
+        sidebarCollapsed: false, // automatically expand when switching tabs
+        activeSidebarTab: tab,
+        viewMode: state.viewMode,
+        panelSizes: state.panelSizes,
+      };
+      savePreferences(updated);
+      return { activeSidebarTab: tab, sidebarCollapsed: false };
+    });
+  },
+
+  toggleSidebarTab: (tab) => {
+    set((state) => {
+      if (state.activeSidebarTab === tab && !state.sidebarCollapsed) {
+        // If clicking the currently active open tab, collapse the sidebar (like VS Code)
+        const updated: LayoutPreferences = {
+          ...state,
+          sidebarCollapsed: true,
+        };
+        savePreferences(updated);
+        return { sidebarCollapsed: true };
+      } else {
+        // Switch to the tab and open the sidebar
+        const updated: LayoutPreferences = {
+          ...state,
+          activeSidebarTab: tab,
+          sidebarCollapsed: false,
+        };
+        savePreferences(updated);
+        return { activeSidebarTab: tab, sidebarCollapsed: false };
+      }
+    });
+  },
+
   setViewMode: (mode) => {
     set((state) => {
       const updated: LayoutPreferences = {
         sidebarCollapsed: mode === 'editor-only' || mode === 'preview-only' ? true : state.sidebarCollapsed,
+        activeSidebarTab: state.activeSidebarTab,
         viewMode: mode,
         panelSizes: state.panelSizes,
       };
@@ -112,6 +160,7 @@ export const useLayoutStore = create<LayoutState>((set) => ({
     set((state) => {
       const updated: LayoutPreferences = {
         sidebarCollapsed: state.sidebarCollapsed,
+        activeSidebarTab: state.activeSidebarTab,
         viewMode: state.viewMode,
         panelSizes: sizes,
       };
@@ -123,6 +172,7 @@ export const useLayoutStore = create<LayoutState>((set) => ({
   resetLayout: () => {
     const updated: LayoutPreferences = {
       sidebarCollapsed: false,
+      activeSidebarTab: 'files',
       viewMode: 'split',
       panelSizes: DEFAULT_SIZES,
     };

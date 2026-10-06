@@ -135,17 +135,20 @@ flowchart TB
 
 ## 🤖 Phase 3: AI Copilot & Inline Intelligence `[COMPLETED]`
 
-- [x] **Google Gemini Generative AI Integration** (`aiService.ts`, `aiApi.ts`, `useAiStore.ts`):
-  - Official `@google/generative-ai` SDK backend integration supporting **Gemini 1.5 Flash**, **Gemini 1.5 Pro**, and **Gemini 2.0 Flash**.
-  - Dynamic API key configuration: Environment variable (`GEMINI_API_KEY`) or client persistent `localStorage` override.
-- [x] **Gemini AI Copilot Sidebar** (`AiSidebar.tsx`):
+- [x] **Dual AI Engine Architecture (Groq LPU & Google Gemini)** (`aiService.ts`, `aiApi.ts`, `useAiStore.ts`):
+  - **Groq LPU High-Speed Acceleration**: Near-instant inference (~250+ tokens/sec) specialized in publication-grade English grammar, academic rewriting, and LaTeX syntax using **GPT-OSS 120B** (`openai/gpt-oss-120b`), **Qwen 3.8 27B** (`qwen/qwen3.8-27b`), and **GPT-OSS 20B**.
+  - **Google Gemini Integration**: Native support for **Gemini 1.5 Flash**, **Gemini 1.5 Pro**, and **Gemini 2.0 Flash**.
+  - Persistent server configuration via `server/.env` (`GROQ_API_KEY`) with client-side override in `localStorage`.
+- [x] **AI Copilot Sidebar** (`AiSidebar.tsx`):
   - Multi-turn conversational chat with automatic document context injection.
   - One-click quick action chips (*Polish Tone*, *Table*, *Math Equation*, *TikZ Graphic*).
   - Code block renderer with syntax highlighting, one-click copy, and one-click **"Insert"** at Monaco cursor position.
+  - Dynamic model pill reflecting active provider and model name.
 - [x] **Inline AI Command Palette (`⌘ + K`)** (`InlineCommandPalette.tsx`):
   - Floating Monaco overlay triggered anywhere in the document.
-  - Selection-aware prompt execution: replaces selected code with refined LaTeX or generates new sections at the cursor.
+  - Selection-aware prompt execution: replaces selected code with refined LaTeX or generates new sections at the cursor in <250ms via Groq.
 - [x] **AI Configuration Modal** (`AiSettingsModal.tsx`):
+  - Segmented provider switcher tabs (**Groq LPU** vs **Google Gemini**).
   - Manage API keys, select preferred models, and verify server configuration status.
 
 ---
