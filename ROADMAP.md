@@ -11,11 +11,13 @@
 | **Phase 0** | **Foundation & Scaffolding** | Vite 8 + React 19 + Monaco + PDF.js + Virtual VFS | `[COMPLETED]` | Delivered |
 | **Phase 1** | **Compilation Engine & Diagnostics** | Node.js Sandboxes + Tectonic/Multi-Engine + Diagnostic Parser | `[COMPLETED]` | Delivered |
 | **Phase 2** | **Design Token System** | Tailwind CSS v4 + Semantic `@theme` + Dark Theme | `[COMPLETED]` | Delivered |
-| **Phase 3** | **AI Copilot & Inline Intelligence** | Gemini 1.5/2.0 + Contextual Chat + `⌘K` Inline Editing | `[COMPLETED]` | Delivered |
-| **Phase 4** | **Overleaf Industrial Differentiators** | AI Doctor, SyncTeX, Smart DOI/BibTeX, TikZ Studio, PDF Diff | `[IN PROGRESS]` | Q2 2026 |
-| **Phase 5** | **Sandboxing, Decoupled Queue & WASM** | Docker/Firecracker, BullMQ + Redis, Client-side WASM TeX | `[PLANNED]` | Q3 2026 |
-| **Phase 6** | **Multiplayer CRDTs & Git Sync** | Yjs Real-Time Engine, Track Changes, GitHub Two-Way Sync | `[PLANNED]` | Q3 2026 |
-| **Phase 7** | **Enterprise Identity & Production Scale** | PostgreSQL/Drizzle, ORCID/SAML SSO, RBAC, Kubernetes Helm | `[PLANNED]` | Q4 2026 |
+| **Phase 3** | **Dual AI Copilot & VS Code Activity Bar** | Groq LPU + Gemini + VS Code Activity Bar + Multi-View Sidebar | `[COMPLETED]` | Delivered |
+| **Phase 4** | **Agentic AI & Research Intelligence** | Autonomous Agent Mode + Tool Calling + Reasoning + Base Paper Reading + Humanizer | `[IN PROGRESS]` | Q2 2026 |
+| **Phase 5** | **Professional IDE Workspace & Navigation** | Application Menu Bar + Editor Tab Pills + Folder Tree + Outline Navigator + Settings Hub | `[IN PROGRESS]` | Q2 2026 |
+| **Phase 6** | **Overleaf Industrial Differentiators** | AI Doctor, SyncTeX, Smart DOI/BibTeX, TikZ Studio, PDF Diff, Pandoc/Word Export | `[PLANNED]` | Q3 2026 |
+| **Phase 7** | **Sandboxing, Decoupled Queue & WASM** | Docker/Firecracker, BullMQ + Redis, Client-side WASM TeX (Offline) | `[PLANNED]` | Q3 2026 |
+| **Phase 8** | **Multiplayer CRDTs & Git Sync** | Yjs Real-Time Engine, Track Changes, GitHub Two-Way Sync | `[PLANNED]` | Q4 2026 |
+| **Phase 9** | **Enterprise Identity & Production Scale** | PostgreSQL/Drizzle, ORCID/SAML SSO, RBAC, Kubernetes Helm | `[PLANNED]` | Q4 2026 |
 
 ---
 
@@ -24,34 +26,42 @@
 ```mermaid
 flowchart TB
     subgraph Frontend ["Client Workspace (React 19 + Vite 8 + Zustand)"]
-        Nav["TopNav & Compilation Controls"]
-        VFS["Virtual File System (VFS & Zip Export)"]
-        Monaco["Monaco LaTeX Editor Core (Snippets, Markers, Cmd+K)"]
+        ActivityBar["VS Code Activity Bar (Explorer, Search, AI, Outline)"]
+        MenuBar["App Menu Bar (File, Edit, Insert, View, Format, Help)"]
+        TabPills["Editor Tab Pills Bar (Multi-File Buffers)"]
+        Monaco["Monaco LaTeX Editor Core (Snippets, Markers, Ghost Text, Cmd+K)"]
         PDFViewer["PDF.js Live Preview (Retina Canvas, Zoom, Continuous)"]
         Logs["Diagnostics & Raw Log Drawer"]
-        AICopilot["Gemini Copilot Sidebar & Inline Palette"]
+        AIAgent["Agent Mode & Multi-Turn Copilot (Groq LPU / Gemini)"]
     end
 
     subgraph Backend ["Compilation & Intelligence Server (Node.js + Express)"]
         API["Express REST API (:4000)"]
-        EngineDetect["Host Engine Discovery (which tectonic/pdflatex)"]
+        EngineDetect["Host Engine Discovery (tectonic, pdflatex, xelatex, latexmk)"]
         Compiler["Build Orchestrator (/tmp/latexer-builds/<uuid>)"]
         LogParser["TeX Log Diagnostic Parser (Errors, Warns, BadBoxes)"]
         PDFStream["In-Memory PDF Cache & Streamer"]
-        AISvc["Gemini AI Service (@google/generative-ai)"]
+        AgentSvc["Agent Tool Execution & Literature Reader"]
+        AISvc["AI Inference Service (Groq LPU & Gemini SDK)"]
     end
 
     subgraph Engines ["Host TeX Engines & External Services"]
         Tectonic["Tectonic (Cloudflare Package Auto-Fetch)"]
         TeXLive["TeXLive / MacTeX (latexmk, pdflatex, xelatex)"]
-        GeminiAPI["Google Gemini API (1.5 Flash / Pro / 2.0 Flash)"]
-        CrossRef["CrossRef & arXiv APIs"]
+        GroqAPI["Groq LPU (GPT-OSS 120B / Qwen 27B / Reasoning Models)"]
+        GeminiAPI["Google Gemini (2.0 Flash / 1.5 Pro / Thinking)"]
+        arXivCrossRef["arXiv & CrossRef Literature APIs"]
     end
 
-    Nav -->|Trigger Compile| API
-    Monaco -->|Synchronize Diagnostics| Logs
-    AICopilot -->|Prompt & Document Context| AISvc
-    AISvc -->|Inference| GeminiAPI
+    ActivityBar --> Monaco
+    MenuBar --> Monaco
+    TabPills --> Monaco
+    Monaco -->|Trigger Compile| API
+    AIAgent -->|Tool Calls & Agent Prompts| AgentSvc
+    AgentSvc --> AISvc
+    AISvc --> GroqAPI
+    AISvc --> GeminiAPI
+    AgentSvc --> arXivCrossRef
     API -->|Sandbox Execution| Compiler
     Compiler -->|Execute| Tectonic
     Compiler -->|Execute| TeXLive
@@ -70,18 +80,18 @@ flowchart TB
   - Production-ready proxying in `vite.config.ts` routing `/api` traffic seamlessly to the backend.
 - [x] **Modern Client Scaffolding**:
   - React 19 (`react: ^19.2.8`), Vite 8 (`vite: ^8.3.0`), TypeScript 6 (`typescript: ~6.0.2`), and Oxlint (`oxlint: ^1.81.0`).
-  - Zustand 5 state management store with persistent local storage hydration (`useProjectStore.ts`).
+  - Zustand 5 state management store with persistent local storage hydration (`useProjectStore.ts`, `useLayoutStore.ts`, `useAiStore.ts`).
 - [x] **Monaco LaTeX Editor Core** (`MonacoLatexEditor.tsx`):
   - Custom LaTeX syntax tokenization with high-contrast theme matching.
   - Native snippet completions: `\begin{equation}`, `\begin{figure}`, `\begin{table}`, `\begin{itemize}`, `\begin{enumerate}`, `\cite`, `\ref`, `\section`, formatting (`\textbf`, `\textit`).
-  - Essential editor keybindings: `⌘ + Enter` / `Ctrl + Enter` (Recompile), `⌘ + S` (Save & Compile), `⌘ + K` (Gemini Inline Prompt).
+  - Essential editor keybindings: `⌘ + Enter` / `Ctrl + Enter` (Recompile), `⌘ + S` (Save & Compile), `⌘ + K` (AI Inline Prompt), `⌘ + B` (Toggle Sidebar), `⌘ + J` (Toggle Diagnostics).
   - Auto-compilation debounce timer option (1.5s idle recompile).
 - [x] **Mozilla PDF.js Hardware-Accelerated Preview** (`PdfViewer.tsx`):
   - Continuous multi-page canvas rendering with high-DPI / Retina display device pixel ratio support.
   - Viewport zoom controls (Zoom In, Zoom Out, Fit to Width) and continuous page indicator.
   - Cache-busting PDF reload streaming and 1-click PDF download action.
-- [x] **Overleaf-Style 3-Panel Resizable Layout** (`App.tsx`):
-  - `react-resizable-panels` implementation featuring File Tree (18%), Monaco Editor (42%), and PDF Live Preview (40%) with responsive drag handles.
+- [x] **Overleaf-Style Resizable Layout** (`WorkspaceLayout.tsx`):
+  - `react-resizable-panels` implementation featuring multi-view Sidebar, Monaco Editor, and PDF Live Preview with responsive drag handles.
 - [x] **Virtual Project File System (VFS)** (`FileTree.tsx`):
   - Multi-file project support (`.tex`, `.bib`, `.sty`, `.cls`, `.json`).
   - Binary image asset upload (PNG, JPG, PDF) with inline image preview.
@@ -104,7 +114,7 @@ flowchart TB
 - [x] **Native Engine Auto-Discovery & Multi-Engine Dispatcher** (`compiler.ts`):
   - Host executable probing across system `$PATH` and macOS distribution paths (`/Library/TeX/texbin`, `/opt/homebrew/bin`, `/usr/local/texlive`).
   - Native runtime dispatching: **Tectonic**, **latexmk**, **pdflatex**, and **xelatex**.
-  - Tectonic Cloudflare bundle caching (`https://data1b.fullyjustified.net/...`) for instant on-demand LaTeX package resolution.
+  - Tectonic Cloudflare bundle caching for instant on-demand LaTeX package resolution.
   - Host engine setup guide modal (`HostSetupModal.tsx`) with Homebrew / MacTeX installation commands.
 - [x] **Zero-Dependency Fallback PDF Generator** (`fallbackPdf.ts`):
   - Generates lightweight PDF document if no host compiler is installed, guiding the user to install Tectonic.
@@ -133,127 +143,221 @@ flowchart TB
 
 ---
 
-## 🤖 Phase 3: AI Copilot & Inline Intelligence `[COMPLETED]`
+## 🤖 Phase 3: Dual AI Copilot, VS Code Activity Bar & Multi-View Sidebar `[COMPLETED]`
 
 - [x] **Dual AI Engine Architecture (Groq LPU & Google Gemini)** (`aiService.ts`, `aiApi.ts`, `useAiStore.ts`):
-  - **Groq LPU High-Speed Acceleration**: Near-instant inference (~250+ tokens/sec) specialized in publication-grade English grammar, academic rewriting, and LaTeX syntax using **GPT-OSS 120B** (`openai/gpt-oss-120b`), **Qwen 3.8 27B** (`qwen/qwen3.8-27b`), and **GPT-OSS 20B**.
-  - **Google Gemini Integration**: Native support for **Gemini 1.5 Flash**, **Gemini 1.5 Pro**, and **Gemini 2.0 Flash**.
-  - Persistent server configuration via `server/.env` (`GROQ_API_KEY`) with client-side override in `localStorage`.
-- [x] **AI Copilot Sidebar** (`AiSidebar.tsx`):
-  - Multi-turn conversational chat with automatic document context injection.
-  - One-click quick action chips (*Polish Tone*, *Table*, *Math Equation*, *TikZ Graphic*).
-  - Code block renderer with syntax highlighting, one-click copy, and one-click **"Insert"** at Monaco cursor position.
-  - Dynamic model pill reflecting active provider and model name.
+  - **Groq LPU Ultra-Fast Acceleration**: Sub-300ms completion speeds (~250+ tokens/sec) for publication-grade grammar, academic writing, and LaTeX equations via **GPT-OSS 120B** (`openai/gpt-oss-120b`), **Qwen 3.8 27B** (`qwen/qwen3.8-27b`), and **GPT-OSS 20B**.
+  - **Google Gemini Engine**: Native support for **Gemini 1.5 Flash**, **Gemini 1.5 Pro**, and **Gemini 2.0 Flash**.
+  - Clean API key management: untracked `.env` backend keys with client override capability in `localStorage`.
+- [x] **VS Code-Style Activity Bar Rail** (`ActivityBar.tsx`):
+  - 46px leftmost vertical navigation rail.
+  - Quick-switch view icons:
+    - 📁 **File Explorer** (`⌘⇧E` / `Ctrl+Shift+E`) with live project file-count badge.
+    - 🔍 **Search in Project** (`⌘⇧F` / `Ctrl+Shift+F`) with global search and replace across virtual files.
+    - ✨ **AI Copilot** with active model indicator pill.
+    - 📑 **Document Outline** (`ListTree`) with structural LaTeX element parser.
+    - ⚙️ **Settings Gear** at the bottom rail opening the engine & AI settings dialog.
+- [x] **Multi-View Sidebar Panels**:
+  - `SearchPanel.tsx`: Full-text search and replace across all project files with case-sensitivity, file match grouping, and click-to-jump to editor line.
+  - `OutlinePanel.tsx`: Parsed LaTeX outline (`\section`, `\subsection`, `table`, `figure`, `equation`) with line jump navigation.
+  - `AiPanel.tsx`: Dedicated sidebar AI view with quick action chips (*Fix Errors*, *Academic Polish*, *Add Comments*) and 1-click Monaco insertion.
 - [x] **Inline AI Command Palette (`⌘ + K`)** (`InlineCommandPalette.tsx`):
   - Floating Monaco overlay triggered anywhere in the document.
   - Selection-aware prompt execution: replaces selected code with refined LaTeX or generates new sections at the cursor in <250ms via Groq.
-- [x] **AI Configuration Modal** (`AiSettingsModal.tsx`):
-  - Segmented provider switcher tabs (**Groq LPU** vs **Google Gemini**).
-  - Manage API keys, select preferred models, and verify server configuration status.
+- [x] **Streamlined Top Title Bar** (`TopNav.tsx`):
+  - Cleaned up duplicate and redundant buttons for a sleek, uncluttered header experience.
 
 ---
 
-## 🚀 Phase 4: Industrial Differentiators (Overleaf Gaps) `[IN PROGRESS]`
+## 🧠 Phase 4: Agentic Intelligence, Research Synthesis & Writing Humanization `[IN PROGRESS]`
 
-### 4.1 AI Error Doctor (1-Click Auto-Patching) `[TODO]`
+### 4.1 Autonomous Agent Mode (Multi-Step Planning & Execution Loop) `[TODO]`
+- [ ] **Autonomous Goal Execution**:
+  - Enable an autonomous Agent mode capable of breaking down high-level prompts (e.g., *"Write a 3-paragraph Related Work section comparing paper A and B, format a comparison table in booktabs, and resolve all missing citations"*).
+  - Iterative `Plan ➔ Act ➔ Observe ➔ Reflect ➔ Verify` execution cycle.
+- [ ] **Interactive Execution Plan Preview**:
+  - Displays proposed step-by-step roadmap of file edits before modifying workspace files.
+  - Allows user approval, step rejection, or single-step execution checkpoints.
+- [ ] **Automated Test-Compile & Self-Correction**:
+  - Automatically triggers compilation after writing code.
+  - Inspects compiler diagnostic logs; if errors or missing packages occur, autonomously applies patches until the build compiles cleanly.
+
+### 4.2 Agent Tool Calling Suite for Workspace File Manipulation `[TODO]`
+- [ ] Standardized structured Tool Calling API (Groq function calling & Gemini tool use):
+  - `readFile(path, startLine?, endLine?)`: Read workspace files or line slices.
+  - `editFile(path, targetSnippet, replacementSnippet)`: Surgical diff/replacement edits.
+  - `createFile(path, content)`: Autonomously create new `.tex`, `.bib`, or `.sty` files.
+  - `deleteFile(path)`: Safe deletion with user confirmation safeguard.
+  - `listFiles(directory?)`: Explore virtual project tree structure.
+  - `searchFiles(query, regex?)`: Project-wide grep search across all files.
+  - `compileProject(engine?)`: Trigger build and return structured diagnostics to the agent.
+- [ ] Interactive tool execution badges in the AI chat with diff previews, status chips, and rollback capability.
+
+### 4.3 Deep Reasoning & Extended Thinking Capacity `[TODO]`
+- [ ] Support for flagship reasoning models:
+  - **DeepSeek-R1**, **QwQ-32B**, **Gemini 2.0 Flash Thinking**, and Groq reasoning endpoints.
+- [ ] **Collapsible Thinking Trace UI Component**:
+  - Render thought processes inside an expandable `<ThinkingTrace>` component with real-time streaming pulses.
+  - Separates internal reasoning (mathematical derivations, proof strategies, structural planning) from the final generated LaTeX code.
+- [ ] Configurable reasoning effort (Low / Medium / High / Deep) in the AI settings modal.
+
+### 4.4 Literature Understanding: Multi-Modal PDF & Base Paper Ingestion `[TODO]`
+- [ ] **Multi-Modal Research Paper Ingestion**:
+  - Dedicated "Reference Papers" drop zone in the workspace: upload base research PDFs (e.g., arXiv downloads, conference papers).
+  - Server-side PDF extraction parsing text, equations, tables, and references from uploaded base papers.
+- [ ] **Literature Review & Grounded Manuscript Writing**:
+  - Ground AI responses on uploaded papers to draft Literature Reviews and Related Work sections with zero hallucinations.
+  - Automatic extraction of baseline data to build comparative benchmark tables (`booktabs`).
+  - Extract and format cited papers directly into clean BibTeX entries appended to `references.bib`.
+
+### 4.5 Ghost Text AI Inline Code Completions `[TODO]`
+- [ ] Monaco `InlineCompletionsProvider` delivering real-time gray phantom text as the author types.
+- [ ] Ultra-fast debounced generation (~150ms via Groq LPU fast inference).
+- [ ] Predicts equation completions, math symbols, `\item` enumerations, and academic sentence continuations.
+- [ ] Standard editor shortcuts: `Tab` to accept ghost text, `Esc` to dismiss, `Alt + ]` / `Alt + [` to cycle alternate proposals.
+
+### 4.6 AI Writing Detection Analysis & Academic Humanizer Engine `[TODO]`
+- [ ] **AI Writing Detection Scanner**:
+  - Real-time sentence-level perplexity and burstiness evaluator.
+  - Visual heatmap overlay highlighting robotic, repetitive, or formulaic sentences.
+  - Overall originality / human-writing score indicator.
+- [ ] **Academic Humanizer Engine**:
+  - 1-Click **"Humanize Selection"** action.
+  - Strips synthetic AI clichés (*"delve into"*, *"testament to"*, *"pivotal role"*, *"moreover"*, *"furthermore"*, *"in conclusion"*).
+  - Rewrites text with authentic academic rhythm, varied sentence lengths, natural signposting, and field-appropriate scientific vocabulary while strictly preserving technical accuracy and LaTeX math environments.
+
+---
+
+## 🖥️ Phase 5: Professional IDE Workspace, Application Menu & Settings Hub `[IN PROGRESS]`
+
+### 5.1 Desktop Application Menu Bar (`File`, `Edit`, `Insert`, `View`, `Format`, `Help`) `[TODO]`
+- [ ] Desktop-grade application menu bar with dropdown menus and keyboard accelerators:
+  - **File**: New File, New Folder, Upload File, Upload Image, Download PDF, Export ZIP, Project Settings.
+  - **Edit**: Undo (`⌘Z`), Redo (`⌘⇧Z`), Find (`⌘F`), Replace (`⌘H`), Select All (`⌘A`), Format Document (`⌥⇧F`).
+  - **Insert**: Section, Equation (`align`), Figure (`graphicx`), Table (`booktabs`), Citation (`\cite`), Math Symbol, Algorithm.
+  - **View**: Toggle Activity Bar, Toggle Sidebar (`⌘B`), Toggle Logs Drawer (`⌘J`), Split / Editor-Only / Preview-Only, Zoom In/Out.
+  - **Format**: Bold (`⌘B`), Italic (`⌘I`), Underline, Inline Math (`$`), Display Math (`$$`), Toggle Comment (`⌘/`), Indent/Outdent.
+  - **Help**: LaTeX Cheat Sheet, Keyboard Shortcuts Modal, TeX Engine Status, Documentation, About Latexer.
+
+### 5.2 Opened File Tab Pills Bar (Multi-File Editor Tabs) `[TODO]`
+- [ ] Multi-file tab bar positioned above the Monaco LaTeX editor:
+  - Displays file pill tabs for all active files (`main.tex`, `references.bib`, `custom.sty`).
+  - Active tab highlight with distinct border and background tokens.
+  - Dirty state indicator (`•` dot) indicating unsaved / modified buffer.
+  - Tab interactions: close tab (`×`), pin tab, drag-and-drop tab reordering, close other tabs, close tabs to the right.
+  - Shortcuts: `⌘W` to close active tab, `⌘1`–`⌘9` / `Ctrl+Tab` for rapid tab cycling.
+
+### 5.3 Hierarchical Folders & Directory Creation in VFS `[TODO]`
+- [ ] Support nested directory hierarchies in the Virtual File System (e.g., `chapters/intro.tex`, `figures/diagram.png`, `styles/macros.sty`).
+- [ ] **Folder Operations**:
+  - "New Folder" icon and context menu option in the File Explorer panel.
+  - Collapsible tree view with persistent expansion states.
+  - Drag-and-drop file organization (move files into folders).
+- [ ] **Compiler Sandbox Path Preservation**:
+  - Compiler worker preserves relative folder structures so `\input{chapters/intro}` and `\includegraphics{figures/diagram}` compile seamlessly without path errors.
+
+### 5.4 Advanced Document Outline & Section Tree Navigator `[TODO]`
+- [ ] Hierarchical document structure parser supporting:
+  - Structural levels: `\part`, `\chapter`, `\section`, `\subsection`, `\subsubsection`, `\paragraph`.
+  - Floating environments: `\begin{table}` (with `\caption`), `\begin{figure}`, `\begin{equation}` (with `\label`), theorems, lemmas.
+- [ ] **Interactive Outline Navigation**:
+  - Click-to-jump navigation scrolling Monaco directly to the section definition.
+  - Active section highlight following the editor cursor position in real time.
+  - Structural drag-and-drop: dragging a subsection in the outline automatically reorders the underlying LaTeX block in the file.
+
+### 5.5 Comprehensive Multi-Category Settings Hub `[TODO]`
+- [ ] Unified, tabbed Settings dialog with deep customization categories:
+  - **Editor**: Font family (Fira Code, JetBrains Mono, Inter), font size, ligatures, line wrapping, line numbers, minimap toggle, tab size, cursor style, bracket pair colorization.
+  - **Spelling & Language**: LTeX / LanguageTool grammar check, UK English vs. US English dictionaries, custom user dictionary for scientific terms, LaTeX-aware spell checking (ignores math and commands).
+  - **Compiler**: Default engine selection, custom compiler flags, compile timeout (s), auto-compile debounce delay, shell-escape policy, SyncTeX generation flag.
+  - **AI Models & Intelligence**: API keys (Groq, Gemini, OpenAI, Claude, local Ollama), default model selector, temperature slider, reasoning effort, custom system prompt/persona, fallback provider.
+  - **Keybindings & Shortcuts**: Interactive keyboard shortcuts viewer and custom remapping table.
+
+---
+
+## 🚀 Phase 6: Overleaf Industrial Differentiators `[PLANNED]`
+
+### 6.1 AI Error Doctor (1-Click Auto-Patching) `[TODO]`
 - [ ] Add a **"✨ Fix with AI"** button on every diagnostic card in `LogsDrawer.tsx`.
-- [ ] Send compiler diagnostic, error snippet, faulty line number, and surrounding 30 lines of code to Gemini.
+- [ ] Send compiler diagnostic, error snippet, faulty line number, and surrounding 30 lines of code to the AI.
 - [ ] Compute minimal replacement hunk and display an interactive diff modal (Before vs. After).
 - [ ] 1-Click **"Apply Fix & Recompile"** updating Monaco buffer and triggering an immediate test build.
 
-### 4.2 SyncTeX Bi-Directional Forward & Inverse Navigation `[TODO]`
+### 6.2 SyncTeX Bi-Directional Forward & Inverse Navigation `[TODO]`
 - [ ] **Build Pipeline Flag**: Enable `--synctex=1` across compilation runs and parse generated `.synctex.gz`.
-- [ ] **Forward Search (Editor ➔ PDF)**:
-  - Keybinding `⌘ + Click` on any line in Monaco editor.
-  - Calculates page number and coordinate box; PDF.js scrolls smoothly and draws a temporary highlighting ring/box around the target paragraph.
-- [ ] **Inverse Search (PDF ➔ Editor)**:
-  - `⌘ + Click` anywhere on the rendered PDF preview canvas.
-  - Resolves source file and line number; Monaco switches to the target file, scrolls to line, and places the cursor.
+- [ ] **Forward Search (Editor ➔ PDF)**: `⌘ + Click` on any line in Monaco editor scrolls PDF.js and highlights the target paragraph.
+- [ ] **Inverse Search (PDF ➔ Editor)**: `⌘ + Click` on the rendered PDF preview switches Monaco to the source file and scrolls to line.
 
-### 4.3 Smart Bibliography & DOI / arXiv Auto-Fetcher `[TODO]`
-- [ ] **Quick Fetch Modal & Shortcut**:
-  - Modal accepting DOI (e.g., `10.1145/3318464.3389700`), arXiv URL / ID (e.g., `arxiv:1706.03762`), or ISBN.
-  - Query CrossRef REST API and arXiv API; transform response into clean, standardized BibTeX entries.
-  - Deduplicate citation keys against existing entries and automatically append to `references.bib`.
-- [ ] **Rich Citation Autocomplete**:
-  - Monaco completion provider for `\cite{...}` reading `references.bib`.
-  - Dropdown displays paper title, first author, publication year, journal, and abstract preview.
+### 6.3 Smart Bibliography & DOI / arXiv Auto-Fetcher `[TODO]`
+- [ ] Quick fetch modal accepting DOI, arXiv ID/URL, or ISBN.
+- [ ] Queries CrossRef REST API and arXiv API; transforms response into clean BibTeX entries appended to `references.bib`.
+- [ ] Rich citation autocomplete in Monaco: dropdown displays paper title, first author, publication year, and abstract preview.
 
-### 4.4 Isolated Live TikZ & PGFPlots Studio `[TODO]`
-- [ ] **Dedicated TikZ Drawer / Playground**:
-  - Isolate active `\begin{tikzpicture} ... \end{tikzpicture}` block into a lightweight standalone template wrapper.
-  - Micro-compilation (<100ms) directly to standalone vector SVG or PDF preview.
-  - Prevents waiting 5-10 seconds to recompile a 60-page paper just to tweak diagram coordinates.
-- [ ] **Export Options**: Export diagram directly as standalone `.svg`, `.pdf`, or high-resolution `.png`.
+### 6.4 Isolated Live TikZ & PGFPlots Studio `[TODO]`
+- [ ] Dedicated playground isolating `\begin{tikzpicture}` blocks into lightweight standalone templates.
+- [ ] Micro-compilation (<100ms) directly to standalone vector SVG or PDF preview.
+- [ ] Export diagram directly as standalone `.svg`, `.pdf`, or high-resolution `.png`.
 
-### 4.5 Visual Rendered PDF Diffing `[TODO]`
-- [ ] **Side-by-Side & Overlay Diff Viewer**:
-  - Compare rendered PDF pages between compilation builds, saved checkpoints, or git commits.
-  - Visual overlay: highlights added paragraphs/equations in emerald green and deleted items in crimson red directly on the PDF pages.
-  - Toggle between split side-by-side mode and opacity slider overlay mode.
+### 6.5 Visual Rendered PDF Diffing `[TODO]`
+- [ ] Compare rendered PDF pages between compilation builds, saved checkpoints, or git commits.
+- [ ] Visual overlay: highlights added paragraphs/equations in emerald green and deleted items in crimson red directly on the PDF pages.
+- [ ] Toggle between split side-by-side mode and opacity slider overlay mode.
 
-### 4.6 Language Server Protocol (TexLab LSP Integration) `[TODO]`
-- [ ] Connect Monaco to a background `texlab` language server via WebSocket (`monaco-languageclient`).
-- [ ] **Semantic IntelliSense**:
-  - Go to Definition / Hover for `\ref`, `\label`, `\cite`, `\input`, and `\include`.
-  - Interactive Table of Contents (ToC) outline navigation panel.
-  - Workspace-wide safe symbol rename (renaming `\label{sec:intro}` updates all `\ref{sec:intro}`).
-
-### 4.7 Multi-Format Publishing Engine (Pandoc / Quarto) `[TODO]`
+### 6.6 Multi-Format Publishing Engine (Pandoc / Quarto) `[TODO]`
 - [ ] Export project to Microsoft Word (`.docx`) for non-LaTeX co-authors and journal reviewers.
 - [ ] Export to clean GitHub Flavored Markdown (`.md`) and interactive HTML5 research article with KaTeX math rendering.
 - [ ] Import from Markdown / Docx into native LaTeX workspace.
 
 ---
 
-## 🛡️ Phase 5: Sandboxing, Decoupled Queue & WebAssembly `[PLANNED]`
+## 🛡️ Phase 7: Sandboxing, Decoupled Queue & WebAssembly `[PLANNED]`
 
-### 5.1 Rootless Compute Sandboxing
+### 7.1 Rootless Compute Sandboxing
 - [ ] Ephemeral rootless Docker containers or Firecracker MicroVMs for untrusted user code compilation.
 - [ ] Strict isolation flags: `--net=none`, memory limit (512MB), CPU quota (1 core), strict timeout (30s).
 - [ ] Enforce `--untrusted` / `-no-shell-escape` preventing unauthorized host process execution.
 - [ ] In-memory `tmpfs` mounts ensuring zero persistent artifact leakage.
 
-### 5.2 WebAssembly (WASM) Zero-Server In-Browser Compilation
+### 7.2 WebAssembly (WASM) Zero-Server In-Browser Compilation
 - [ ] Integrate WebAssembly TeX engine (e.g. Wasm Tectonic / SwiftLaTeX) running inside a Web Worker.
 - [ ] Enables **100% offline, zero-server, private compilation** directly inside the user's browser without requiring any local backend or CLI installation.
 
-### 5.3 Decoupled Job Queue & Content-Addressable Storage (CAS)
+### 7.3 Decoupled Job Queue & Content-Addressable Storage (CAS)
 - [ ] **BullMQ + Redis**: Asynchronous job queue decoupling user-facing HTTP servers from TeX worker pools.
 - [ ] **CAS Caching**: Compute SHA-256 hashes of source files; if hash matches prior build, return cached PDF instantly in 0ms.
 - [ ] Cloudflare R2 / AWS S3 object storage for persistent PDF artifacts, project bundles, and figure assets.
 
 ---
 
-## 👥 Phase 6: Multiplayer Real-Time Collaboration & Git Sync `[PLANNED]`
+## 👥 Phase 8: Multiplayer Real-Time Collaboration & Git Sync `[PLANNED]`
 
-### 6.1 Yjs CRDT Synchronization Engine
+### 8.1 Yjs CRDT Synchronization Engine
 - [ ] Integrate **Yjs** CRDTs with `y-monaco` and WebSocket / WebRTC signaling server.
 - [ ] Real-time multi-user typing with sub-50ms latency.
 - [ ] Colored live user cursors, presence avatars, and selection highlights in Monaco editor.
 
-### 6.2 Track Changes & Review Mode
+### 8.2 Track Changes & Review Mode
 - [ ] Suggestion mode: visual inline additions (green) and deletions (red strike-through).
 - [ ] Author Accept / Reject diff controls per hunk.
 - [ ] Threaded inline comments anchored to specific lines with `@mention` notifications.
 
-### 6.3 Bi-Directional Git Synchronization
+### 8.3 Bi-Directional Git Synchronization
 - [ ] Virtualized Git repository per project with commit history graph.
 - [ ] Two-way GitHub and GitLab repository synchronization (push, pull, conflict resolution).
 
 ---
 
-## 🏢 Phase 7: Enterprise Identity, Governance & Cloud Scale `[PLANNED]`
+## 🏢 Phase 9: Enterprise Identity, Governance & Cloud Scale `[PLANNED]`
 
-### 7.1 Database & Persistence
+### 9.1 Database & Persistence
 - [ ] PostgreSQL database with Drizzle ORM managing Users, Organizations, Workspaces, and Projects.
 - [ ] Comprehensive audit logging and project version snapshots.
 
-### 7.2 Identity & Role-Based Access Control (RBAC)
+### 9.2 Identity & Role-Based Access Control (RBAC)
 - [ ] Granular workspace permissions: **Owner**, **Maintainer**, **Author**, **Reviewer**, **Viewer**.
 - [ ] Academic Single Sign-On (SSO): ORCID OAuth, Google Workspace, and Shibboleth / SAML / EduGAIN.
 
-### 7.3 Production Orchestration & Observability
+### 9.3 Production Orchestration & Observability
 - [ ] Production deployment orchestration:
   - `docker-compose.prod.yml` (Nginx, API server, TeX workers, PostgreSQL, Redis, MinIO).
   - Production Kubernetes Helm charts with horizontal pod autoscaling (HPA) for TeX workers.

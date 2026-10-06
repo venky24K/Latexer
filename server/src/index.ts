@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { compileWorkspace, detectEngines, pdfCache } from './compiler.js';
 import { CompileRequest } from './types.js';
-import { dispatchAiChat, dispatchAiInlineEdit } from './aiService.js';
+import { dispatchAiChat, dispatchAiInlineEdit, dispatchAiAgentStep } from './aiService.js';
 
 // Load .env automatically if present
 try {
@@ -126,6 +126,29 @@ app.post('/api/ai/inline-edit', async (req, res) => {
   } catch (err: any) {
     console.error('AI Inline Edit Error:', err);
     res.status(500).json({ error: err.message || 'AI inline edit failed' });
+  }
+});
+
+app.post('/api/ai/agent-step', async (req, res) => {
+  try {
+    const { messages, tools, model, apiKey, provider, temperature } = req.body;
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: 'Messages array is required' });
+    }
+
+    const stepResult = await dispatchAiAgentStep({
+      provider,
+      apiKey,
+      model,
+      messages,
+      tools: tools || [],
+      temperature,
+    });
+
+    res.json(stepResult);
+  } catch (err: any) {
+    console.error('AI Agent Step Error:', err);
+    res.status(500).json({ error: err.message || 'Agent step failed' });
   }
 });
 

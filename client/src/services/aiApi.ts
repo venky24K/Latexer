@@ -72,3 +72,56 @@ export async function sendAiInlineEditRequest(params: {
   const data = await res.json();
   return data.replacement;
 }
+
+export interface AgentApiMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content?: string | null;
+  tool_calls?: Array<{
+    id: string;
+    type: 'function';
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
+  tool_call_id?: string;
+  name?: string;
+}
+
+export interface AgentStepResponse {
+  message: {
+    role: 'assistant';
+    content: string | null;
+    tool_calls?: Array<{
+      id: string;
+      type: 'function';
+      function: {
+        name: string;
+        arguments: string;
+      };
+    }>;
+  };
+}
+
+export async function sendAiAgentStep(params: {
+  messages: AgentApiMessage[];
+  tools: any[];
+  model?: string;
+  apiKey?: string;
+  provider?: 'groq' | 'gemini';
+  temperature?: number;
+}): Promise<AgentStepResponse> {
+  const res = await fetch('/api/ai/agent-step', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(errorData.error || 'Agent step failed');
+  }
+
+  return res.json();
+}
+

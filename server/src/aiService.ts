@@ -257,3 +257,226 @@ export async function dispatchAiInlineEdit(params: AiInlineParams): Promise<stri
   }
   return inlineEditWithGemini(params);
 }
+
+// ================= Agent Mode & Tool Calling Types & Dispatchers =================
+export interface AgentToolDeclaration {
+  name: string;
+  description: string;
+  parameters: {
+    type: string;
+    properties: Record<string, any>;
+    required?: string[];
+  };
+}
+
+export interface AgentMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content?: string | null;
+  tool_calls?: Array<{
+    id: string;
+    type: 'function';
+    function: {
+      name: string;
+      arguments: string; // JSON string
+    };
+  }>;
+  tool_call_id?: string;
+  name?: string;
+}
+
+export interface AiAgentStepParams {
+  provider?: 'groq' | 'gemini';
+  apiKey?: string;
+  model?: string;
+  messages: AgentMessage[];
+  tools: AgentToolDeclaration[];
+  temperature?: number;
+}
+
+export interface AiAgentStepResult {
+  message: {
+    role: 'assistant';
+    content: string | null;
+    tool_calls?: Array<{
+      id: string;
+      type: 'function';
+      function: {
+        name: string;
+        arguments: string;
+      };
+    }>;
+  };
+}
+
+async function agentStepWithGroq(params: AiAgentStepParams): Promise<AiAgentStepResult> {
+  const key = params.apiKey || process.env.GROQ_API_KEY;
+  if (!key) {
+    throw new Error('Groq API key is required for agent execution.');
+  }
+
+  const model = params.model && !params.model.startsWith('gemini-') ? params.model : 'openai/gpt-oss-120b';
+
+  const tools = params.tools.map((t) => ({
+    type: 'function',
+    function: {
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+    },
+  }));
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages: params.messages,
+      tools: tools.length > 0 ? tools : undefined,
+      tool_choice: tools.length > 0 ? 'auto' : undefined,
+      temperature: params.temperature ?? 0.2,
+      max_tokens: 4096,
+    }),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ error: { message: res.statusText } }));
+    throw new Error(errBody.error?.message || `Groq Agent API error: ${res.statusText}`);
+  }
+
+  const data = await res.json();
+  const choice = data.choices?.[0];
+  const msg = choice?.message;
+
+  return {
+    message: {
+      role: 'assistant',
+      content: msg?.content || null,
+      tool_calls: msg?.tool_calls || undefined,
+    },
+  };
+}
+
+async function agentStepWithGemini(params: AiAgentStepParams): Promise<AiAgentStepResult> {
+  const key = params.apiKey || process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error('Gemini API key is required for agent execution.');
+  }
+
+  const genAI = new GoogleGenerativeAI(key);
+  const modelName = params.model || 'gemini-1.5-flash';
+
+  const functionDeclarations = params.tools.map((t) => ({
+    name: t.name,
+    description: t.description,
+    parameters: t.parameters as any,
+  }));
+
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+    tools: functionDeclarations.length > 0 ? [{ functionDeclarations }] : undefined,
+  });
+
+  const contents: any[] = [];
+  for (const m of params.messages) {
+    if (m.role === 'system') {
+      contents.push({
+        role: 'user',
+        parts: [{ text: `[SYSTEM INSTRUCTION]: ${m.content || ''}` }],
+      });
+      contents.push({
+        role: 'model',
+        parts: [{ text: 'Understood. I will act as the Latexer Agent and use tools appropriately.' }],
+      });
+    } else if (m.role === 'user') {
+      contents.push({
+        role: 'user',
+        parts: [{ text: m.content || '' }],
+      });
+    } else if (m.role === 'assistant') {
+      const parts: any[] = [];
+      if (m.content) parts.push({ text: m.content });
+      if (m.tool_calls) {
+        for (const tc of m.tool_calls) {
+          try {
+            parts.push({
+              functionCall: {
+                name: tc.function.name,
+                args: JSON.parse(tc.function.arguments),
+              },
+            });
+          } catch {
+            parts.push({
+              functionCall: {
+                name: tc.function.name,
+                args: {},
+              },
+            });
+          }
+        }
+      }
+      contents.push({ role: 'model', parts });
+    } else if (m.role === 'tool') {
+      let parsedResponse: any;
+      try {
+        parsedResponse = JSON.parse(m.content || '{}');
+      } catch {
+        parsedResponse = { output: m.content };
+      }
+      contents.push({
+        role: 'user',
+        parts: [
+          {
+            functionResponse: {
+              name: m.name || 'tool_response',
+              response: parsedResponse,
+            },
+          },
+        ],
+      });
+    }
+  }
+
+  const result = await model.generateContent({ contents });
+  const response = result.response;
+  const functionCalls = response.functionCalls();
+
+  let tool_calls: any[] | undefined = undefined;
+  if (functionCalls && functionCalls.length > 0) {
+    tool_calls = functionCalls.map((fc, idx) => ({
+      id: `call_${Date.now()}_${idx}`,
+      type: 'function',
+      function: {
+        name: fc.name,
+        arguments: JSON.stringify(fc.args),
+      },
+    }));
+  }
+
+  let textContent: string | null = null;
+  try {
+    textContent = response.text() || null;
+  } catch {
+    // If response was function-call only, response.text() can throw
+    textContent = null;
+  }
+
+  return {
+    message: {
+      role: 'assistant',
+      content: textContent,
+      tool_calls,
+    },
+  };
+}
+
+export async function dispatchAiAgentStep(params: AiAgentStepParams): Promise<AiAgentStepResult> {
+  const provider = resolveProvider(params.model, params.provider);
+  if (provider === 'groq') {
+    return agentStepWithGroq(params);
+  }
+  return agentStepWithGemini(params);
+}
+
