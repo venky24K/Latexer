@@ -1,6 +1,7 @@
 import React from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAiStore } from '../../store/useAiStore';
+import { useLayoutStore } from '../../store/useLayoutStore';
 import {
   Play,
   Download,
@@ -13,6 +14,12 @@ import {
   XCircle,
   Loader2,
   Sparkles,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Columns2,
+  Code2,
+  BookOpen,
+  RotateCcw,
 } from 'lucide-react';
 
 export const TopNav: React.FC = () => {
@@ -39,6 +46,13 @@ export const TopNav: React.FC = () => {
   } = useProjectStore();
 
   const { aiSidebarOpen, toggleAiSidebar } = useAiStore();
+  const {
+    sidebarCollapsed,
+    toggleSidebar,
+    viewMode,
+    setViewMode,
+    resetLayout,
+  } = useLayoutStore();
 
   const isCompiling = compilationState === 'compiling';
   const hasErrors = errors.length > 0;
@@ -46,7 +60,7 @@ export const TopNav: React.FC = () => {
 
   return (
     <header className="top-nav">
-      {/* Left: Brand & Project Name */}
+      {/* Left: Brand, Sidebar Toggle & Project Name */}
       <div className="nav-left">
         <div className="brand-logo">
           <div className="logo-badge">
@@ -54,6 +68,15 @@ export const TopNav: React.FC = () => {
           </div>
           <span className="brand-title">Latexer</span>
         </div>
+
+        {/* Sidebar Toggle Button (⌘B) */}
+        <button
+          className={`btn-icon-nav sidebar-toggle ${!sidebarCollapsed ? 'active' : ''}`}
+          onClick={() => toggleSidebar()}
+          title={sidebarCollapsed ? 'Show Project Files (⌘B)' : 'Hide Project Files (⌘B)'}
+        >
+          {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+        </button>
 
         <div className="project-title-container">
           <input
@@ -123,7 +146,7 @@ export const TopNav: React.FC = () => {
           onClick={() => toggleLogsDrawer()}
           role="button"
           tabIndex={0}
-          title="Click to view compilation logs & diagnostics"
+          title="Click to view compilation logs & diagnostics (⌘J)"
         >
           {isCompiling && (
             <>
@@ -159,8 +182,40 @@ export const TopNav: React.FC = () => {
         </div>
       </div>
 
-      {/* Right: Actions, Downloads, Templates & Host Status */}
+      {/* Right: Layout Switcher, AI, Templates, Engine & Downloads */}
       <div className="nav-right">
+        {/* Workspace Layout Mode Segmented Control */}
+        <div className="layout-mode-group" title="Workspace Layout Mode">
+          <button
+            className={`layout-btn ${viewMode === 'split' ? 'active' : ''}`}
+            onClick={() => setViewMode('split')}
+            title="Split View (Editor + PDF)"
+          >
+            <Columns2 size={13} />
+          </button>
+          <button
+            className={`layout-btn ${viewMode === 'editor-only' ? 'active' : ''}`}
+            onClick={() => setViewMode('editor-only')}
+            title="Code Focus (Full-Width Editor)"
+          >
+            <Code2 size={13} />
+          </button>
+          <button
+            className={`layout-btn ${viewMode === 'preview-only' ? 'active' : ''}`}
+            onClick={() => setViewMode('preview-only')}
+            title="Reading Focus (Full-Width PDF)"
+          >
+            <BookOpen size={13} />
+          </button>
+          <button
+            className="layout-btn reset"
+            onClick={resetLayout}
+            title="Reset Panel Proportions to Default (18 / 42 / 40)"
+          >
+            <RotateCcw size={12} />
+          </button>
+        </div>
+
         {/* Gemini AI Copilot Trigger */}
         <button
           className={`nav-btn ai-btn ${aiSidebarOpen ? 'active' : ''}`}
