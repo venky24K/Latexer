@@ -572,6 +572,37 @@ export const MonacoLatexEditor: React.FC = () => {
             modified={pendingEdit.newContent}
             onMount={(diffEditor) => {
               diffEditorRef.current = diffEditor;
+
+              try {
+                diffEditor.updateOptions({
+                  renderSideBySide: false,
+                  compactMode: true,
+                  hideOriginalLineNumbers: true,
+                } as any);
+
+                // Disable line numbers and margin on original (hidden) sub-editor completely
+                const orig = diffEditor.getOriginalEditor();
+                orig.updateOptions({
+                  lineNumbers: 'off',
+                  glyphMargin: false,
+                  folding: false,
+                  lineDecorationsWidth: 0,
+                  lineNumbersMinChars: 0,
+                });
+
+                // Configure modified editor with compact line numbers
+                const mod = diffEditor.getModifiedEditor();
+                mod.updateOptions({
+                  lineNumbers: 'on',
+                  lineNumbersMinChars: 3,
+                  glyphMargin: false,
+                  folding: false,
+                  lineDecorationsWidth: 4,
+                });
+              } catch (e) {
+                console.error('Error configuring diff editor options:', e);
+              }
+
               const modifiedEditor = diffEditor.getModifiedEditor();
               modifiedEditor.onDidChangeModelContent(() => {
                 const val = modifiedEditor.getValue();
@@ -580,6 +611,8 @@ export const MonacoLatexEditor: React.FC = () => {
             }}
             options={{
               renderSideBySide: false, // Unified inline diff view like Cursor/Windsurf
+              hideOriginalLineNumbers: true,
+              compactMode: true,
               readOnly: false,
               originalEditable: false,
               fontSize: 12,
@@ -587,17 +620,21 @@ export const MonacoLatexEditor: React.FC = () => {
               fontFamily: "'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', monospace",
               fontLigatures: true,
               lineHeight: 19,
+              lineNumbers: 'on',
+              lineNumbersMinChars: 3,
+              glyphMargin: false,
+              folding: false,
+              lineDecorationsWidth: 4,
               minimap: { enabled: true, scale: 0.8 },
               scrollBeyondLastLine: false,
               wordWrap: 'on',
               automaticLayout: true,
-              lineNumbers: 'on',
               renderWhitespace: 'selection',
               smoothScrolling: true,
               cursorBlinking: 'smooth',
               cursorSmoothCaretAnimation: 'on',
               diffWordWrap: 'on',
-            }}
+            } as any}
           />
 
           {/* Floating Action Toolbar Overlay */}
@@ -706,6 +743,9 @@ export const MonacoLatexEditor: React.FC = () => {
               suggestOnTriggerCharacters: true,
               bracketPairColorization: { enabled: true },
               lineNumbers: 'on',
+              lineNumbersMinChars: 3,
+              glyphMargin: false,
+              lineDecorationsWidth: 4,
               renderWhitespace: 'selection',
               smoothScrolling: true,
               cursorBlinking: 'smooth',

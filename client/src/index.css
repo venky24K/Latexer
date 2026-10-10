@@ -250,3 +250,24 @@ html, body, #root {
 .animate-pulse-glow {
   animation: pulseGlow 2s ease-in-out infinite;
 }
+
+/* Inline Diff Editor: Compact single-column gutter & eliminate wasted space */
+.monaco-diff-editor .original-in-monaco-diff-editor,
+.monaco-diff-editor:not(.side-by-side) .original-in-monaco-diff-editor,
+.monaco-diff-editor:not(.side-by-side) .editor.original {
+  display: none !important;
+  width: 0px !important;
+  max-width: 0px !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+}
+
+.monaco-diff-editor .inline-deleted-margin-view-zone .line-numbers,
+.monaco-diff-editor .gutter-delete .line-numbers {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+.monaco-diff-editor:not(.side-by-side) .modified-in-monaco-diff-editor {
+  left: 0px !important;
+}
