@@ -49,13 +49,41 @@ export const PdfViewer: React.FC = () => {
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [scale, setScale] = useState<number>(1.2);
+  const [scale, setScale] = useState<number>(1.0);
+  const [autoFit, setAutoFit] = useState<boolean>(true);
   const [renderError, setRenderError] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRefs = useRef<{ [key: number]: HTMLCanvasElement | null }>({});
+  const renderTasksRef = useRef<{ [key: number]: any }>({});
+  const autoFitRef = useRef<boolean>(true);
+  autoFitRef.current = autoFit;
+  const pdfDocRef = useRef<any>(null);
+  pdfDocRef.current = pdfDoc;
 
   const isCompiling = compilationState === 'compiling';
+
+  // Helper to compute and apply scale matching container width
+  const fitToContainerWidth = useCallback((doc: any = pdfDocRef.current) => {
+    if (!containerRef.current || !doc) return;
+    doc
+      .getPage(1)
+      .then((page: any) => {
+        if (!containerRef.current) return;
+        const naturalViewport = page.getViewport({ scale: 1.0 });
+        // Accounting for container padding (p-6 = 48px) and breathing space
+        const availableWidth = containerRef.current.clientWidth - 56;
+        if (naturalViewport.width > 0 && availableWidth > 80) {
+          const computedScale = Number(
+            Math.min(Math.max(0.3, availableWidth / naturalViewport.width), 3.0).toFixed(2)
+          );
+          setScale((prev) => (Math.abs(prev - computedScale) > 0.01 ? computedScale : prev));
+        }
+      })
+      .catch((err: any) => {
+        console.error('Fit width calculation error:', err);
+      });
+  }, []);
 
   // Load PDF Document when pdfUrl changes
   useEffect(() => {
@@ -77,6 +105,9 @@ export const PdfViewer: React.FC = () => {
         if (!isCancelled) {
           setPdfDoc(loadedPdf);
           setNumPages(loadedPdf.numPages);
+          if (autoFitRef.current) {
+            fitToContainerWidth(loadedPdf);
+          }
         }
       })
       .catch((err) => {
@@ -88,9 +119,55 @@ export const PdfViewer: React.FC = () => {
 
     return () => {
       isCancelled = true;
+      Object.values(renderTasksRef.current).forEach((task: any) => {
+        try {
+          task?.cancel();
+        } catch {
+          // ignore
+        }
+      });
+      renderTasksRef.current = {};
       loadingTask.destroy();
     };
-  }, [pdfUrl]);
+  }, [pdfUrl, fitToContainerWidth]);
+
+  // Responsive auto-scale on preview container resize (pane divider drag, window resize)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let resizeTimer: any = null;
+    let lastCallTime = 0;
+    const THROTTLE_INTERVAL = 60;
+
+    const handleResize = () => {
+      if (!autoFitRef.current || !pdfDocRef.current) return;
+      fitToContainerWidth(pdfDocRef.current);
+    };
+
+    const observer = new ResizeObserver(() => {
+      if (!autoFitRef.current || !pdfDocRef.current) return;
+
+      const now = Date.now();
+      if (now - lastCallTime >= THROTTLE_INTERVAL) {
+        lastCallTime = now;
+        handleResize();
+      }
+
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        lastCallTime = Date.now();
+        handleResize();
+      }, THROTTLE_INTERVAL);
+    });
+
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+      if (resizeTimer) clearTimeout(resizeTimer);
+    };
+  }, [fitToContainerWidth]);
 
   // Render individual page onto canvas
   const renderPage = useCallback(
@@ -98,6 +175,16 @@ export const PdfViewer: React.FC = () => {
       if (!pdfDoc) return;
       const canvas = canvasRefs.current[pageNum];
       if (!canvas) return;
+
+      // Cancel any ongoing render task on this canvas before starting a new one
+      if (renderTasksRef.current[pageNum]) {
+        try {
+          renderTasksRef.current[pageNum].cancel();
+        } catch {
+          // ignore cancellation
+        }
+        delete renderTasksRef.current[pageNum];
+      }
 
       try {
         const page = await pdfDoc.getPage(pageNum);
@@ -120,10 +207,16 @@ export const PdfViewer: React.FC = () => {
           transform: transform,
         };
 
-        await page.render(renderContext).promise;
+        const task = page.render(renderContext);
+        renderTasksRef.current[pageNum] = task;
+        await task.promise;
       } catch (err: any) {
         if (err.name !== 'RenderingCancelledException') {
           console.error(`Page ${pageNum} render error:`, err);
+        }
+      } finally {
+        if (renderTasksRef.current[pageNum]) {
+          delete renderTasksRef.current[pageNum];
         }
       }
     },
@@ -139,21 +232,111 @@ export const PdfViewer: React.FC = () => {
   }, [pdfDoc, numPages, scale, renderPage]);
 
   // Zoom controls
-  const handleZoomIn = () => setScale((prev) => Math.min(prev + 0.15, 3.0));
-  const handleZoomOut = () => setScale((prev) => Math.max(prev - 0.15, 0.5));
-  const handleFitWidth = () => {
-    if (!containerRef.current || !pdfDoc) return;
-    pdfDoc.getPage(1).then((page: any) => {
-      const naturalViewport = page.getViewport({ scale: 1.0 });
-      const containerWidth = containerRef.current!.clientWidth - 64; // accounting for padding
-      if (naturalViewport.width > 0) {
-        setScale(Math.max(0.6, containerWidth / naturalViewport.width));
+  const handleZoomIn = useCallback(() => {
+    setAutoFit(false);
+    setScale((prev) => Number(Math.min(prev + 0.15, 3.0).toFixed(2)));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setAutoFit(false);
+    setScale((prev) => Number(Math.max(prev - 0.15, 0.3).toFixed(2)));
+  }, []);
+
+  const handleFitWidth = useCallback(() => {
+    setAutoFit(true);
+    if (pdfDocRef.current) {
+      fitToContainerWidth(pdfDocRef.current);
+    }
+  }, [fitToContainerWidth]);
+
+  const isHoveredRef = useRef<boolean>(false);
+
+  // Trackpad pinch-to-zoom and Ctrl/Cmd + Wheel zoom with cursor anchoring
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Pinch gesture on macOS trackpad or Cmd/Ctrl + mouse wheel
+      if (!e.ctrlKey && !e.metaKey) return;
+
+      e.preventDefault();
+      setAutoFit(false);
+
+      const delta = -e.deltaY;
+      let factor: number;
+      if (Math.abs(delta) > 50) {
+        // Discrete mouse wheel tick
+        factor = delta > 0 ? 1.1 : 0.9;
+      } else {
+        // Smooth trackpad pinch gesture
+        factor = 1 + delta * 0.01;
       }
-    });
-  };
+
+      setScale((prevScale) => {
+        const nextScale = Number(Math.min(Math.max(0.3, prevScale * factor), 3.0).toFixed(2));
+        if (Math.abs(nextScale - prevScale) < 0.005) return prevScale;
+
+        // Focal zoom: Anchor scroll position to mouse cursor
+        if (container) {
+          const rect = container.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          const scrollRatio = nextScale / prevScale;
+          const newScrollLeft = (container.scrollLeft + mouseX) * scrollRatio - mouseX;
+          const newScrollTop = (container.scrollTop + mouseY) * scrollRatio - mouseY;
+
+          requestAnimationFrame(() => {
+            container.scrollLeft = newScrollLeft;
+            container.scrollTop = newScrollTop;
+          });
+        }
+
+        return nextScale;
+      });
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
+  // Keyboard zoom shortcuts (Cmd/Ctrl + +, Cmd/Ctrl + -, Cmd/Ctrl + 0)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMeta = e.metaKey || e.ctrlKey;
+      if (!isMeta) return;
+
+      if (!isHoveredRef.current) return;
+
+      if (e.key === '=' || e.key === '+') {
+        e.preventDefault();
+        handleZoomIn();
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        handleZoomOut();
+      } else if (e.key === '0') {
+        e.preventDefault();
+        handleFitWidth();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleZoomIn, handleZoomOut, handleFitWidth]);
 
   return (
-    <div className="relative flex flex-col h-full bg-preview select-none overflow-hidden">
+    <div
+      className="relative flex flex-col h-full bg-preview select-none overflow-hidden"
+      onMouseEnter={() => {
+        isHoveredRef.current = true;
+      }}
+      onMouseLeave={() => {
+        isHoveredRef.current = false;
+      }}
+    >
       {/* PDF Toolbar */}
       <div className="h-[38px] bg-toolbar backdrop-blur-md border-b border-border-subtle flex items-center justify-between px-3 z-[5]">
         {/* Left: Page Navigation */}
@@ -194,22 +377,35 @@ export const PdfViewer: React.FC = () => {
           <button
             className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[26px] h-[26px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
             onClick={handleZoomOut}
-            title="Zoom Out"
+            title="Zoom Out (Cmd -)"
           >
             <ZoomOut size={16} />
           </button>
-          <span className="text-[11.5px] text-text-secondary px-1 select-none">{Math.round(scale * 100)}%</span>
+          <button
+            className="text-[11.5px] text-text-secondary hover:text-text-primary hover:bg-card px-1.5 py-0.5 rounded cursor-pointer min-w-[40px] text-center transition-all border border-transparent hover:border-border-subtle select-none"
+            onClick={() => {
+              setAutoFit(false);
+              setScale((prev) => (Math.abs(prev - 1.0) < 0.05 ? 1.25 : 1.0));
+            }}
+            title="Click to toggle 100% / 125%"
+          >
+            {Math.round(scale * 100)}%
+          </button>
           <button
             className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[26px] h-[26px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
             onClick={handleZoomIn}
-            title="Zoom In"
+            title="Zoom In (Cmd +)"
           >
             <ZoomIn size={16} />
           </button>
           <button
-            className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[26px] h-[26px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
+            className={`w-[26px] h-[26px] rounded flex items-center justify-center cursor-pointer transition-all duration-150 ${
+              autoFit
+                ? 'bg-card text-brand border border-brand/35 shadow-sm font-semibold'
+                : 'bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed'
+            }`}
             onClick={handleFitWidth}
-            title="Fit to Width"
+            title={autoFit ? 'Fit to Width (Auto-Scaling Active)' : 'Fit to Width (Cmd 0)'}
           >
             <Maximize2 size={16} />
           </button>

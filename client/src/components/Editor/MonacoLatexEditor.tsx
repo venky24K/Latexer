@@ -634,6 +634,7 @@ export const MonacoLatexEditor: React.FC = () => {
               cursorBlinking: 'smooth',
               cursorSmoothCaretAnimation: 'on',
               diffWordWrap: 'on',
+              mouseWheelZoom: true,
             } as any}
           />
 
@@ -750,6 +751,7 @@ export const MonacoLatexEditor: React.FC = () => {
               smoothScrolling: true,
               cursorBlinking: 'smooth',
               cursorSmoothCaretAnimation: 'on',
+              mouseWheelZoom: true,
               inlineSuggest: {
                 enabled: true,
                 mode: 'subwordSmart',
