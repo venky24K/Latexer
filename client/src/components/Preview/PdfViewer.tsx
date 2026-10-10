@@ -8,11 +8,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  RotateCw,
   AlertCircle,
+  AlertTriangle,
   FileQuestion,
   Loader2,
   Sparkles,
+  Play,
+  CheckCircle2,
+  Terminal,
 } from 'lucide-react';
 import { useLayoutStore } from '../../store/useLayoutStore';
 import { useAgentStore } from '../../store/useAgentStore';
@@ -31,6 +34,8 @@ export const PdfViewer: React.FC = () => {
     pdfUrl,
     compilationState,
     errors,
+    warnings,
+    compileDuration,
     rawLog,
     toggleLogsDrawer,
     compileNow,
@@ -64,6 +69,8 @@ export const PdfViewer: React.FC = () => {
   pdfDocRef.current = pdfDoc;
 
   const isCompiling = compilationState === 'compiling';
+  const hasErrors = errors.length > 0;
+  const hasWarnings = warnings.length > 0;
 
   // Helper to compute and apply scale matching container width
   const fitToContainerWidth = useCallback((doc: any = pdfDocRef.current) => {
@@ -340,11 +347,81 @@ export const PdfViewer: React.FC = () => {
       }}
     >
       {/* PDF Toolbar */}
-      <div className="h-[38px] bg-toolbar backdrop-blur-md border-b border-border-subtle flex items-center justify-between px-3 z-[5]">
-        {/* Left: Page Navigation */}
+      <div className="h-[38px] bg-toolbar backdrop-blur-md border-b border-border-subtle flex items-center justify-between px-2.5 z-[5]">
+        {/* Left: Recompile, Compact Warnings/Diagnostics, and Page Navigation */}
         <div className="flex items-center gap-1.5">
+          {/* Recompile Button */}
           <button
-            className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[26px] h-[26px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold text-white transition-all duration-150 cursor-pointer shadow-2xs ${
+              isCompiling
+                ? 'bg-brand/70 cursor-not-allowed'
+                : hasErrors
+                ? 'bg-accent-red hover:bg-accent-red/90'
+                : 'bg-brand hover:bg-brand-hover'
+            }`}
+            onClick={compileNow}
+            disabled={isCompiling}
+            title="Recompile PDF (⌘Enter)"
+          >
+            {isCompiling ? (
+              <Loader2 className="animate-spin" size={13} />
+            ) : (
+              <Play className="fill-current" size={11} />
+            )}
+            <span>Recompile</span>
+          </button>
+
+          {/* Compact Warning / Diagnostic Icon Button */}
+          <button
+            className={`h-[26px] px-1.5 rounded flex items-center gap-1 text-xs font-semibold transition-all cursor-pointer border ${
+              hasErrors
+                ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 hover:bg-rose-500/20'
+                : hasWarnings
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 hover:bg-amber-500/20'
+                : compilationState === 'success'
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/20'
+                : 'bg-card border-border-subtle text-text-muted hover:text-text-primary'
+            }`}
+            onClick={() => toggleLogsDrawer()}
+            title={
+              hasErrors
+                ? `${errors.length} error${errors.length > 1 ? 's' : ''} (Click to open logs)`
+                : hasWarnings
+                ? `${warnings.length} warning${warnings.length > 1 ? 's' : ''} (Click to open logs)`
+                : compilationState === 'success'
+                ? `Compiled in ${compileDuration != null ? (compileDuration / 1000).toFixed(2) : '0'}s (Click to open logs)`
+                : 'View compiler logs'
+            }
+          >
+            {isCompiling ? (
+              <Loader2 size={13} className="animate-spin text-brand" />
+            ) : hasErrors ? (
+              <>
+                <AlertCircle size={13} />
+                <span className="text-[11px] font-mono">{errors.length}</span>
+              </>
+            ) : hasWarnings ? (
+              <>
+                <AlertTriangle size={13} />
+                <span className="text-[11px] font-mono">{warnings.length}</span>
+              </>
+            ) : compilationState === 'success' ? (
+              <>
+                <CheckCircle2 size={13} />
+                {compileDuration != null && compileDuration > 0 && (
+                  <span className="text-[10px] font-mono">{(compileDuration / 1000).toFixed(1)}s</span>
+                )}
+              </>
+            ) : (
+              <Terminal size={13} />
+            )}
+          </button>
+
+          <div className="w-px h-4 bg-border-subtle mx-0.5" />
+
+          {/* Page Navigation */}
+          <button
+            className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[24px] h-[24px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
             disabled={currentPage <= 1 || numPages <= 1}
             onClick={() => {
               const prev = Math.max(1, currentPage - 1);
@@ -354,13 +431,13 @@ export const PdfViewer: React.FC = () => {
             }}
             title="Previous Page"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={15} />
           </button>
-          <span className="text-[11.5px] text-text-secondary px-1 select-none">
-            Page {numPages > 0 ? currentPage : 0} of {numPages}
+          <span className="text-[11px] text-text-secondary px-0.5 select-none whitespace-nowrap">
+            {numPages > 0 ? currentPage : 0}/{numPages}
           </span>
           <button
-            className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[26px] h-[26px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
+            className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[24px] h-[24px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
             disabled={currentPage >= numPages || numPages <= 1}
             onClick={() => {
               const next = Math.min(numPages, currentPage + 1);
@@ -370,21 +447,21 @@ export const PdfViewer: React.FC = () => {
             }}
             title="Next Page"
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={15} />
           </button>
         </div>
 
-        {/* Center: Zoom Controls */}
-        <div className="flex items-center gap-1.5">
+        {/* Right: Zoom Controls & Download */}
+        <div className="flex items-center gap-1">
           <button
-            className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[26px] h-[26px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
+            className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[24px] h-[24px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
             onClick={handleZoomOut}
             title="Zoom Out (Cmd -)"
           >
-            <ZoomOut size={16} />
+            <ZoomOut size={15} />
           </button>
           <button
-            className="text-[11.5px] text-text-secondary hover:text-text-primary hover:bg-card px-1.5 py-0.5 rounded cursor-pointer min-w-[40px] text-center transition-all border border-transparent hover:border-border-subtle select-none"
+            className="text-[11px] text-text-secondary hover:text-text-primary hover:bg-card px-1 py-0.5 rounded cursor-pointer min-w-[36px] text-center transition-all border border-transparent hover:border-border-subtle select-none"
             onClick={() => {
               setAutoFit(false);
               setScale((prev) => (Math.abs(prev - 1.0) < 0.05 ? 1.25 : 1.0));
@@ -394,42 +471,31 @@ export const PdfViewer: React.FC = () => {
             {Math.round(scale * 100)}%
           </button>
           <button
-            className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[26px] h-[26px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
+            className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[24px] h-[24px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
             onClick={handleZoomIn}
             title="Zoom In (Cmd +)"
           >
-            <ZoomIn size={16} />
+            <ZoomIn size={15} />
           </button>
           <button
-            className={`w-[26px] h-[26px] rounded flex items-center justify-center cursor-pointer transition-all duration-150 ${
+            className={`w-[24px] h-[24px] rounded flex items-center justify-center cursor-pointer transition-all duration-150 ${
               autoFit
-                ? 'bg-card text-brand border border-brand/35 shadow-sm font-semibold'
+                ? 'bg-card text-brand border border-brand/35 shadow-2xs font-semibold'
                 : 'bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed'
             }`}
             onClick={handleFitWidth}
             title={autoFit ? 'Fit to Width (Auto-Scaling Active)' : 'Fit to Width (Cmd 0)'}
           >
-            <Maximize2 size={16} />
+            <Maximize2 size={14} />
           </button>
-        </div>
-
-        {/* Right: Quick actions */}
-        <div className="flex items-center gap-1.5">
+          <div className="w-px h-3.5 bg-border-subtle mx-0.5" />
           <button
-            className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[26px] h-[26px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
-            onClick={compileNow}
-            disabled={isCompiling}
-            title="Recompile PDF"
-          >
-            <RotateCw size={15} className={isCompiling ? 'animate-spin' : ''} />
-          </button>
-          <button
-            className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[26px] h-[26px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
+            className="bg-transparent border border-transparent text-text-secondary hover:not-disabled:bg-card hover:not-disabled:text-text-primary hover:not-disabled:border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed w-[24px] h-[24px] rounded flex items-center justify-center cursor-pointer transition-all duration-150"
             onClick={downloadPdf}
             disabled={!pdfUrl}
             title="Download PDF"
           >
-            <Download size={15} />
+            <Download size={14} />
           </button>
         </div>
       </div>

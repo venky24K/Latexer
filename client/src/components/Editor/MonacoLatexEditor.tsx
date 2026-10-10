@@ -463,6 +463,51 @@ export const MonacoLatexEditor: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [closeTab, activeFilePath, openTabs, setActiveFile]);
 
+  // Listen for menu actions (File, Edit, Insert, Format)
+  useEffect(() => {
+    const handleLatexMenuAction = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (!editorRef.current) return;
+      const editor = editorRef.current;
+      const { type, text, before, after } = customEvent.detail || {};
+
+      if (type === 'undo') {
+        editor.trigger('menu', 'undo', null);
+      } else if (type === 'redo') {
+        editor.trigger('menu', 'redo', null);
+      } else if (type === 'insert' && text) {
+        const selection = editor.getSelection();
+        if (selection) {
+          editor.executeEdits('menu-insert', [
+            {
+              range: selection,
+              text,
+              forceMoveMarkers: true,
+            },
+          ]);
+          editor.focus();
+        }
+      } else if (type === 'wrap' && before && after) {
+        const selection = editor.getSelection();
+        const model = editor.getModel();
+        if (selection && model) {
+          const selectedText = model.getValueInRange(selection);
+          editor.executeEdits('menu-wrap', [
+            {
+              range: selection,
+              text: `${before}${selectedText || 'text'}${after}`,
+              forceMoveMarkers: true,
+            },
+          ]);
+          editor.focus();
+        }
+      }
+    };
+
+    window.addEventListener('latex-menu-action', handleLatexMenuAction);
+    return () => window.removeEventListener('latex-menu-action', handleLatexMenuAction);
+  }, []);
+
   if (!activeFile) {
     return (
       <div className="editor-empty-state">
