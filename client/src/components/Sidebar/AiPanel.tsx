@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { useAiStore } from '../../store/useAiStore';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAgentStore, type AgentToolCallLog, type PendingEdit } from '../../store/useAgentStore';
@@ -379,69 +380,64 @@ export const AiPanel: React.FC = () => {
   ];
 
   const renderContent = (content: string, messageId: string) => {
-    const codeBlockRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;
-    const parts = [];
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-    let blockIndex = 0;
+    return (
+      <div className="ai-markdown-content">
+        <ReactMarkdown
+          components={{
+            code({ node, inline, className, children, ...props }: any) {
+              const match = /language-(\w+)/.exec(className || '');
+              const codeString = String(children).replace(/\n$/, '');
+              const isBlock = !inline && (Boolean(match) || codeString.includes('\n'));
 
-    while ((match = codeBlockRegex.exec(content)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(
-          <span key={`text-${lastIndex}`} className="ai-text-block">
-            {content.substring(lastIndex, match.index)}
-          </span>
-        );
-      }
+              if (isBlock) {
+                const lang = (match ? match[1] : 'latex').toUpperCase();
+                const blockId = `${messageId}-code-${Math.random()}`;
+                const isCopied = copiedId === blockId;
 
-      const lang = match[1] || 'latex';
-      const code = match[2];
-      const blockId = `${messageId}-code-${blockIndex++}`;
-      const isCopied = copiedId === blockId;
+                return (
+                  <div key={blockId} className="ai-code-card">
+                    <div className="ai-code-header">
+                      <span className="ai-code-lang">{lang}</span>
+                      <div className="ai-code-actions">
+                        <button
+                          type="button"
+                          className="ai-code-btn"
+                          onClick={() => handleCopyCode(codeString, blockId)}
+                          title="Copy code"
+                        >
+                          {isCopied ? <Check size={11} className="text-green" /> : <Copy size={11} />}
+                          <span>{isCopied ? 'Copied' : 'Copy'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="ai-code-btn primary"
+                          onClick={() => insertAtCursor(codeString)}
+                          title="Insert at Monaco cursor"
+                        >
+                          <CornerDownLeft size={11} />
+                          <span>Insert</span>
+                        </button>
+                      </div>
+                    </div>
+                    <pre className="ai-code-pre">
+                      <code>{codeString}</code>
+                    </pre>
+                  </div>
+                );
+              }
 
-      parts.push(
-        <div key={blockId} className="ai-code-card">
-          <div className="ai-code-header">
-            <span className="ai-code-lang">{lang.toUpperCase()}</span>
-            <div className="ai-code-actions">
-              <button
-                type="button"
-                className="ai-code-btn"
-                onClick={() => handleCopyCode(code, blockId)}
-                title="Copy code"
-              >
-                {isCopied ? <Check size={11} className="text-green" /> : <Copy size={11} />}
-                <span>{isCopied ? 'Copied' : 'Copy'}</span>
-              </button>
-              <button
-                type="button"
-                className="ai-code-btn primary"
-                onClick={() => insertAtCursor(code)}
-                title="Insert at Monaco cursor"
-              >
-                <CornerDownLeft size={11} />
-                <span>Insert</span>
-              </button>
-            </div>
-          </div>
-          <pre className="ai-code-pre">
-            <code>{code}</code>
-          </pre>
-        </div>
-      );
-
-      lastIndex = match.index + match[0].length;
-    }
-
-    if (lastIndex < content.length) {
-      parts.push(
-        <span key={`text-${lastIndex}`} className="ai-text-block">
-          {content.substring(lastIndex)}
-        </span>
-      );
-    }
-
-    return parts;
+              return (
+                <code className="ai-inline-code" {...props}>
+                  {children}
+                </code>
+              );
+            },
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
+    );
   };
 
   const modelShortName = selectedModel

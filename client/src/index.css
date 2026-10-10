@@ -2118,3 +2118,91 @@ body, html, #root {
   border-radius: 3px;
 }
 
+/* AI Markdown Content Styling */
+.ai-markdown-content {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.ai-markdown-content p {
+  margin: 0 0 8px 0;
+}
+
+.ai-markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.ai-markdown-content strong,
+.ai-markdown-content b {
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.ai-markdown-content em,
+.ai-markdown-content i {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.ai-markdown-content ul {
+  list-style-type: disc !important;
+  margin: 6px 0 10px 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ai-markdown-content ol {
+  list-style-type: decimal !important;
+  margin: 6px 0 10px 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ai-markdown-content li {
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.ai-markdown-content li > p {
+  margin: 0;
+}
+
+.ai-markdown-content h1,
+.ai-markdown-content h2,
+.ai-markdown-content h3,
+.ai-markdown-content h4 {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 10px 0 6px 0;
+}
+
+.ai-markdown-content h1 { font-size: 15px; }
+.ai-markdown-content h2 { font-size: 14px; }
+.ai-markdown-content h3 { font-size: 13px; }
+
+.ai-markdown-content blockquote {
+  border-left: 3px solid #3b82f6;
+  padding-left: 10px;
+  margin: 8px 0;
+  color: var(--text-secondary);
+  font-style: italic;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: 0 4px 4px 0;
+}
+
+.ai-inline-code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11.5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #38bdf8;
+  padding: 1.5px 5px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
