@@ -104,7 +104,7 @@ export const useAiStore = create<AiState>((set, get) => ({
     {
       id: 'welcome',
       role: 'assistant',
-      content: `Hello! I am your **Latexer AI Copilot** powered by **Groq LPU Acceleration** & Google Gemini. 
+      content: `Hello! I am your **ElseWhere AI Copilot** powered by **Groq LPU Acceleration** & Google Gemini. 
 I specialize in:
 - ✍️ **Impeccable Academic English Grammar**: Fixing phrasing, tense consistency, and tone
 - 📐 **LaTeX Mathematical Typesetting**: Equations, matrices, alignments, and symbols

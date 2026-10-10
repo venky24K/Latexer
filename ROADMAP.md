@@ -1,6 +1,6 @@
-# 🗺️ Latexer Engineering Roadmap
+# 🗺️ ElseWhere Engineering Roadmap
 
-> Tracking engineering milestones, completed architectural modules, and industrial-grade differentiators for **Latexer** — the high-performance, local-first collaborative LaTeX authoring suite.
+> Tracking engineering milestones, completed architectural modules, and industrial-grade differentiators for **ElseWhere** — the high-performance, local-first collaborative LaTeX & research authoring suite.
 
 ---
 
@@ -12,7 +12,7 @@
 | **Phase 1** | **Compilation Engine & Diagnostics** | Node.js Sandboxes + Tectonic/Multi-Engine + Diagnostic Parser | `[COMPLETED]` | Delivered |
 | **Phase 2** | **Design Token System** | Tailwind CSS v4 + Semantic `@theme` + Dark Theme | `[COMPLETED]` | Delivered |
 | **Phase 3** | **Dual AI Copilot & VS Code Activity Bar** | Groq LPU + Gemini + VS Code Activity Bar + Multi-View Sidebar | `[COMPLETED]` | Delivered |
-| **Phase 4** | **Agentic AI & Research Intelligence** | Autonomous Agent Mode + Tool Calling + Reasoning + Base Paper Reading + Humanizer | `[IN PROGRESS]` | Q2 2026 |
+| **Phase 4** | **Agentic AI & Research Intelligence** | Dual-Mode ChatPanel + Autonomous Agent + Tool Calling + Reasoning + Base Paper Reading + Humanizer | `[IN PROGRESS]` | Q2 2026 |
 | **Phase 5** | **Professional IDE Workspace & Navigation** | Application Menu Bar + Editor Tab Pills + Folder Tree + Outline Navigator + Settings Hub | `[IN PROGRESS]` | Q2 2026 |
 | **Phase 6** | **Overleaf Industrial Differentiators** | AI Doctor, SyncTeX, Smart DOI/BibTeX, TikZ Studio, PDF Diff, Pandoc/Word Export | `[PLANNED]` | Q3 2026 |
 | **Phase 7** | **Sandboxing, Decoupled Queue & WASM** | Docker/Firecracker, BullMQ + Redis, Client-side WASM TeX (Offline) | `[PLANNED]` | Q3 2026 |
@@ -32,7 +32,7 @@ flowchart TB
         Monaco["Monaco LaTeX Editor Core (Snippets, Markers, Ghost Text, Cmd+K)"]
         PDFViewer["PDF.js Live Preview (Retina Canvas, Zoom, Continuous)"]
         Logs["Diagnostics & Raw Log Drawer"]
-        AIAgent["Agent Mode & Multi-Turn Copilot (Groq LPU / Gemini)"]
+        AIAgent["ChatPanel (AiPanel.tsx): Copilot Chat & Autonomous Agent Mode"]
     end
 
     subgraph Backend ["Compilation & Intelligence Server (Node.js + Express)"]
@@ -171,29 +171,58 @@ flowchart TB
 
 ## 🧠 Phase 4: Agentic Intelligence, Research Synthesis & Writing Humanization `[IN PROGRESS]`
 
-### 4.1 Autonomous Agent Mode (Multi-Step Planning & Execution Loop) `[TODO]`
-- [ ] **Autonomous Goal Execution**:
-  - Enable an autonomous Agent mode capable of breaking down high-level prompts (e.g., *"Write a 3-paragraph Related Work section comparing paper A and B, format a comparison table in booktabs, and resolve all missing citations"*).
-  - Iterative `Plan ➔ Act ➔ Observe ➔ Reflect ➔ Verify` execution cycle.
+### 4.1 ChatPanel Architecture & Dual-Mode AI Workspace (`AiPanel.tsx`) `[IN PROGRESS]`
+- [x] **Dual-Mode Switcher Interface**:
+  - Segmented toggle switching between **⚡ Agent Mode** and **💬 Copilot Chat Mode**.
+  - Provider & model indicator badges (Groq LPU / Google Gemini with model short name).
+  - Header actions: Clear History (context-dependent for Chat vs. Agent) and AI Settings dialog launcher.
+- [ ] **Copilot Chat Interface & Formatting**:
+  - [x] Multi-turn conversational history maintaining author-copilot dialogue.
+  - [x] Interactive LaTeX code cards with syntax badges, copy button, and 1-click Monaco cursor insertion (`insertAtCursor`).
+  - [x] 4 one-click starter quick action chips (*Polish Academic Tone*, *Add Math Equation*, *Create Table*, *Fix LaTeX Errors*).
+  - [ ] **Rich Markdown Message Renderer**: Render bold, italics, bullet lists, numbered lists, headings, and inline math/code instead of raw markdown characters.
+  - [ ] **Auto-Resizing Composer Textarea**: Dynamic height expansion up to 160px with `Enter` (send) and `Shift + Enter` (newline) handling.
+  - [ ] **Dynamic Provider Placeholders & Sender Metadata**: Contextual placeholders matching active engine and immutable provider branding on message bubbles.
+  - [ ] **Document Context & Selection Toggle**: Toggle switch for `[x] Include Document Context` and active selection line-count badge.
+  - [ ] **Thread Persistence**: Store recent conversation history in `localStorage` so chats survive browser refreshes.
+- [x] **Autonomous Agent Workspace UI**:
+  - [x] Goal composer with pre-configured task chips (*Fix Errors*, *Booktabs Tables*, *BibTeX Citations*, *Math Appendix*).
+  - [x] Clean user message box and direct agent response card (no redundant headers or emoji clutter).
+  - [x] Interactive tool call cards displaying tool icon, execution state badges (`running`, `success`, `error`), and error diagnostics.
+  - [x] Live syntax diff cards showing surgical file modifications (`- target` / `+ replacement`).
+  - [x] Step progress counter (`Step X/10`) with live execution footer.
+  - [ ] **Execution Cancellation & Status Badges**: `AbortController` integration with responsive `Stopped` / `Aborted` state indicators.
+  - [ ] **Expandable Tool Data Inspector**: Collapsible drawer revealing returned search results, line numbers, and raw compiler diagnostic logs.
+
+### 4.2 Autonomous Agent Mode & Prompt Architecture (`prompts.ts`) `[COMPLETED]`
+- [x] **Modular Prompt Architecture (`prompts.ts`)**:
+  - Domain-specific prompt generators inspired by modern AI IDE architectures (`buildAgentSystemPrompt`, `buildChatSystemPrompt`, `buildInlineEditPrompt`).
+  - Dynamic `<workspace_context>` injection (active file, open files list, compiler engine).
+  - **Fast-Path Intent Detection**: Zero tool calls for greetings (*"hi"*, *"who are you"*) and conceptual/academic queries; direct friendly responses without over-inspecting the workspace.
+  - **Anti-Narration Rule**: Prohibits routine narration ("I will now call read_file") to keep agent execution clean and direct.
+  - **Reasoning Isolation**: Internal model reasoning (`choice.message.reasoning`) is decoupled from user-facing `content`, preventing monologue leaks into chat bubbles.
+- [x] **Autonomous Goal Execution**:
+  - Autonomous Agent mode capable of breaking down high-level manuscript and coding goals across the workspace.
+  - Iterative `Plan ➔ Act ➔ Observe ➔ Reflect ➔ Verify` execution cycle (up to 10 sequential steps).
 - [ ] **Interactive Execution Plan Preview**:
   - Displays proposed step-by-step roadmap of file edits before modifying workspace files.
   - Allows user approval, step rejection, or single-step execution checkpoints.
-- [ ] **Automated Test-Compile & Self-Correction**:
-  - Automatically triggers compilation after writing code.
-  - Inspects compiler diagnostic logs; if errors or missing packages occur, autonomously applies patches until the build compiles cleanly.
+- [x] **Automated Test-Compile & Self-Correction**:
+  - Automatically triggers compilation via `compile_and_diagnose` after writing code.
+  - Inspects compiler diagnostic logs; if syntax errors or missing packages occur, autonomously patches files until the project compiles with 0 errors.
 
-### 4.2 Agent Tool Calling Suite for Workspace File Manipulation `[TODO]`
-- [ ] Standardized structured Tool Calling API (Groq function calling & Gemini tool use):
-  - `readFile(path, startLine?, endLine?)`: Read workspace files or line slices.
-  - `editFile(path, targetSnippet, replacementSnippet)`: Surgical diff/replacement edits.
-  - `createFile(path, content)`: Autonomously create new `.tex`, `.bib`, or `.sty` files.
-  - `deleteFile(path)`: Safe deletion with user confirmation safeguard.
-  - `listFiles(directory?)`: Explore virtual project tree structure.
-  - `searchFiles(query, regex?)`: Project-wide grep search across all files.
-  - `compileProject(engine?)`: Trigger build and return structured diagnostics to the agent.
-- [ ] Interactive tool execution badges in the AI chat with diff previews, status chips, and rollback capability.
+### 4.3 Agent Tool Calling Suite for Workspace File Manipulation `[COMPLETED]`
+- [x] Standardized structured Tool Calling API (Groq function calling & Gemini tool declarations):
+  - `list_files`: Scan virtual project tree and asset metadata.
+  - `read_file(path, start_line?, end_line?)`: Read file contents or line slices.
+  - `write_file(path, content)`: Create new files or overwrite existing files.
+  - `edit_file(path, target_snippet, replacement_snippet)`: Surgical diff/replacement edits.
+  - `delete_file(path)`: Safe file deletion (`main.tex` protected).
+  - `search_files(query, case_sensitive?)`: Project-wide grep search across all text files.
+  - `compile_and_diagnose(engine?)`: Trigger build and return structured diagnostics to the agent.
+- [x] Interactive tool execution badges in the AI sidebar with status chips, result messages, and live diff previews.
 
-### 4.3 Deep Reasoning & Extended Thinking Capacity `[TODO]`
+### 4.4 Deep Reasoning & Extended Thinking Capacity `[TODO]`
 - [ ] Support for flagship reasoning models:
   - **DeepSeek-R1**, **QwQ-32B**, **Gemini 2.0 Flash Thinking**, and Groq reasoning endpoints.
 - [ ] **Collapsible Thinking Trace UI Component**:
@@ -201,7 +230,7 @@ flowchart TB
   - Separates internal reasoning (mathematical derivations, proof strategies, structural planning) from the final generated LaTeX code.
 - [ ] Configurable reasoning effort (Low / Medium / High / Deep) in the AI settings modal.
 
-### 4.4 Literature Understanding: Multi-Modal PDF & Base Paper Ingestion `[TODO]`
+### 4.5 Literature Understanding: Multi-Modal PDF & Base Paper Ingestion `[TODO]`
 - [ ] **Multi-Modal Research Paper Ingestion**:
   - Dedicated "Reference Papers" drop zone in the workspace: upload base research PDFs (e.g., arXiv downloads, conference papers).
   - Server-side PDF extraction parsing text, equations, tables, and references from uploaded base papers.
@@ -210,13 +239,13 @@ flowchart TB
   - Automatic extraction of baseline data to build comparative benchmark tables (`booktabs`).
   - Extract and format cited papers directly into clean BibTeX entries appended to `references.bib`.
 
-### 4.5 Ghost Text AI Inline Code Completions `[TODO]`
+### 4.6 Ghost Text AI Inline Code Completions `[TODO]`
 - [ ] Monaco `InlineCompletionsProvider` delivering real-time gray phantom text as the author types.
 - [ ] Ultra-fast debounced generation (~150ms via Groq LPU fast inference).
 - [ ] Predicts equation completions, math symbols, `\item` enumerations, and academic sentence continuations.
 - [ ] Standard editor shortcuts: `Tab` to accept ghost text, `Esc` to dismiss, `Alt + ]` / `Alt + [` to cycle alternate proposals.
 
-### 4.6 AI Writing Detection Analysis & Academic Humanizer Engine `[TODO]`
+### 4.7 AI Writing Detection Analysis & Academic Humanizer Engine `[TODO]`
 - [ ] **AI Writing Detection Scanner**:
   - Real-time sentence-level perplexity and burstiness evaluator.
   - Visual heatmap overlay highlighting robotic, repetitive, or formulaic sentences.

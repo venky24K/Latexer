@@ -62,7 +62,7 @@ export const AiSettingsModal: React.FC = () => {
         </div>
 
         <p className="modal-description">
-          Latexer provides real-time document drafting, publication-grade academic English proofreading,
+          ElseWhere provides real-time document drafting, publication-grade academic English proofreading,
           and inline <code>⌘K</code> transformations powered by high-speed AI engines.
         </p>
 

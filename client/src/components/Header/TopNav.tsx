@@ -54,9 +54,9 @@ export const TopNav: React.FC = () => {
       <div className="nav-left">
         <div className="brand-logo">
           <div className="logo-badge">
-            <span className="logo-tex">L</span>
+            <span className="logo-tex">E</span>
           </div>
-          <span className="brand-title">Latexer</span>
+          <span className="brand-title">ElseWhere</span>
         </div>
 
 

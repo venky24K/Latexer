@@ -3,6 +3,7 @@ import { useProjectStore } from './useProjectStore';
 import { useAiStore } from './useAiStore';
 import { LATEXER_AGENT_TOOLS, executeAgentTool } from '../services/agentTools';
 import { sendAiAgentStep, type AgentApiMessage } from '../services/aiApi';
+import { buildAgentSystemPrompt, formatUserGoalMessage } from '../services/prompts';
 
 export interface AgentToolCallLog {
   id: string;
@@ -40,25 +41,6 @@ interface AgentState {
   clearAgentLogs: () => void;
 }
 
-const AGENT_SYSTEM_PROMPT = `You are the autonomous Latexer Project Engineering Agent.
-Your objective is to achieve the author's research, writing, formatting, or debugging goal across the LaTeX project workspace.
-
-You have access to a suite of tools to inspect, modify, and compile the workspace:
-- list_files: List all workspace files and assets.
-- read_file: Read file contents or line slices.
-- write_file: Create new files or completely overwrite existing files.
-- edit_file: Surgically replace exact code snippets in existing files.
-- delete_file: Delete a file (main.tex is protected).
-- search_files: Search for text, citations, or equations across files.
-- compile_and_diagnose: Compile the project and inspect errors/warnings.
-
-Protocol:
-1. EXPLORE: If you need to see existing file contents, call read_file or list_files first.
-2. SURGICAL EDITS: When modifying files, prefer edit_file to preserve existing code. Make sure target_snippet is exact and unique.
-3. VERIFICATION: Whenever you make changes that could impact compilation, ALWAYS call compile_and_diagnose to verify that the project compiles with 0 errors!
-4. REPAIR: If compile_and_diagnose reports errors, inspect the offending file and line, then call edit_file to patch the syntax until it compiles.
-5. FINISH: When the goal is fully accomplished, provide a concise final summary of the changes made without calling further tools.`;
-
 export const useAgentStore = create<AgentState>((set, get) => ({
   isRunning: false,
   currentGoal: '',
@@ -75,8 +57,19 @@ export const useAgentStore = create<AgentState>((set, get) => ({
     const projectStore = useProjectStore.getState();
     const aiStore = useAiStore.getState();
 
-    const fileList = Object.keys(projectStore.files).join(', ');
-    const initialFilesSummary = `Project files currently in workspace: [${fileList}]. Active file: "${projectStore.activeFilePath}".`;
+    const fileList = Object.keys(projectStore.files);
+    const activeFile = projectStore.activeFilePath || 'main.tex';
+
+    const systemPrompt = buildAgentSystemPrompt({
+      activeFile,
+      files: fileList,
+      engine: 'tectonic',
+    });
+
+    const userPrompt = formatUserGoalMessage(trimmedGoal, {
+      activeFile,
+      files: fileList,
+    });
 
     set({
       isRunning: true,
@@ -88,11 +81,8 @@ export const useAgentStore = create<AgentState>((set, get) => ({
     });
 
     const messages: AgentApiMessage[] = [
-      { role: 'system', content: AGENT_SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: `Author's Goal: ${trimmedGoal}\n\n${initialFilesSummary}`,
-      },
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
     ];
 
     let stepCounter = 0;
@@ -120,17 +110,19 @@ export const useAgentStore = create<AgentState>((set, get) => ({
 
         const assistantMsg = response.message;
         const toolCalls = assistantMsg.tool_calls || [];
-        const thoughtContent = assistantMsg.content || undefined;
+        const userContent = assistantMsg.content || undefined;
+        const thoughtContent = assistantMsg.thought || undefined;
 
-        // If no tool calls were requested, the agent has finished its work
+        // If no tool calls were requested, the agent has finished its work (greeting, explanation, or task complete)
         if (!toolCalls || toolCalls.length === 0) {
+          const finalSummary = userContent || thoughtContent || 'Task completed successfully.';
           set((state) => ({
             logs: [
               ...state.logs,
               {
                 stepIndex: stepCounter,
                 thought: thoughtContent,
-                completedSummary: thoughtContent || 'Task completed successfully.',
+                completedSummary: finalSummary,
                 timestamp: Date.now(),
               },
             ],

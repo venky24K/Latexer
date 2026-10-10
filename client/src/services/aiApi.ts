@@ -92,6 +92,7 @@ export interface AgentStepResponse {
   message: {
     role: 'assistant';
     content: string | null;
+    thought?: string;
     tool_calls?: Array<{
       id: string;
       type: 'function';

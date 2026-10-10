@@ -3,7 +3,6 @@ import { useAiStore } from '../../store/useAiStore';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAgentStore } from '../../store/useAgentStore';
 import {
-  Sparkles,
   Send,
   Trash2,
   Settings,
@@ -11,9 +10,7 @@ import {
   Check,
   CornerDownLeft,
   Loader2,
-  Zap,
   Bot,
-  Brain,
   Hammer,
   FileEdit,
   FileText,
@@ -23,7 +20,6 @@ import {
   AlertCircle,
   Play,
   Square,
-  CheckCircle2,
 } from 'lucide-react';
 
 export const AiPanel: React.FC = () => {
@@ -50,7 +46,6 @@ export const AiPanel: React.FC = () => {
     maxSteps,
     logs: agentLogs,
     error: agentError,
-    completed: agentCompleted,
     startAgentTask,
     stopAgent,
     clearAgentLogs,
@@ -227,11 +222,7 @@ export const AiPanel: React.FC = () => {
       {/* Header */}
       <div className="sidebar-header">
         <div className="sidebar-header-left">
-          {provider === 'groq' ? <Zap size={14} className="text-amber" /> : <Sparkles size={14} className="text-blue" />}
-          <span className="sidebar-title">{provider === 'groq' ? 'GROQ COPILOT' : 'GEMINI COPILOT'}</span>
-          <span className="sidebar-model-badge" title={selectedModel}>
-            {modelShortName}
-          </span>
+          <span className="sidebar-title">{modelShortName}</span>
         </div>
 
         <div className="sidebar-actions">
@@ -273,16 +264,14 @@ export const AiPanel: React.FC = () => {
           className={`ai-mode-btn agent ${activeMode === 'agent' ? 'active' : ''}`}
           onClick={() => setActiveMode('agent')}
         >
-          <Bot size={13} />
-          <span>⚡ Agent Mode</span>
+          <span>Agent Mode</span>
         </button>
         <button
           type="button"
           className={`ai-mode-btn ${activeMode === 'chat' ? 'active' : ''}`}
           onClick={() => setActiveMode('chat')}
         >
-          <Sparkles size={13} />
-          <span>💬 Copilot Chat</span>
+          <span>Copilot Chat</span>
         </button>
       </div>
 
@@ -295,7 +284,7 @@ export const AiPanel: React.FC = () => {
               <div className="agent-welcome-card">
                 <div className="agent-welcome-title">
                   <Bot size={16} className="text-amber" />
-                  <span>Latexer Autonomous Agent</span>
+                  <span>ElseWhere Autonomous Agent</span>
                 </div>
                 <div className="agent-welcome-desc">
                   The agent plans multi-step tasks, surgically edits workspace files, runs compilation tests, and repairs LaTeX errors automatically.
@@ -317,88 +306,61 @@ export const AiPanel: React.FC = () => {
               </div>
             )}
 
-            {/* Active Goal Banner */}
+            {/* User Message in a box */}
             {currentGoal && (
-              <div className="agent-goal-banner">
-                <span className="agent-goal-text" title={currentGoal}>
-                  Goal: {currentGoal}
-                </span>
-                {isAgentRunning && (
-                  <span className="agent-tool-badge running">
-                    Step {currentStep}/{maxSteps}
-                  </span>
-                )}
-                {agentCompleted && (
-                  <span className="agent-tool-badge success">
-                    Done
-                  </span>
-                )}
+              <div className="agent-user-box">
+                {currentGoal}
               </div>
             )}
 
-            {/* Steps & Tool Calls Timeline */}
-            {agentLogs.map((step) => (
-              <div key={step.stepIndex} className="agent-step-card">
-                <div className="agent-step-header">
-                  <span>Step {step.stepIndex}</span>
+            {/* Agent Steps & Response without any subheading or title */}
+            {agentLogs.map((step) => {
+              const responseText = step.completedSummary;
+              return (
+                <div key={step.stepIndex} className="agent-step-container">
+                  {/* Tool Invocations */}
+                  {step.toolCalls && step.toolCalls.map((tc) => (
+                    <div key={tc.id} className={`agent-tool-call ${tc.status}`}>
+                      <div className="agent-tool-title-row">
+                        <div className="agent-tool-name">
+                          {getToolIcon(tc.name)}
+                          <span>{tc.name}</span>
+                          {tc.args.path && <span className="text-muted">({tc.args.path})</span>}
+                          {tc.args.query && <span className="text-muted">("{tc.args.query}")</span>}
+                        </div>
+                        <span className={`agent-tool-badge ${tc.status}`}>
+                          {tc.status === 'running' ? 'Executing...' : tc.status}
+                        </span>
+                      </div>
+
+                      {tc.resultMessage && (
+                        <div className="agent-tool-msg">{tc.resultMessage}</div>
+                      )}
+
+                      {/* Diff Preview */}
+                      {tc.diff && (
+                        <div className="agent-diff-card">
+                          <div className="agent-diff-header">
+                            Changes in {tc.diff.path}
+                          </div>
+                          <div className="agent-diff-body">
+                            <div className="diff-target">- {tc.diff.target}</div>
+                            <div className="diff-replacement">+ {tc.diff.replacement}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Clean Agent Response without any subheading or title */}
+                  {responseText && (
+                    <div className="agent-response-box">
+                      {renderContent(responseText, `agent-step-${step.stepIndex}`)}
+                    </div>
+                  )}
                 </div>
-
-                {/* Thought Trace */}
-                {step.thought && (
-                  <div className="agent-thought-box">
-                    <div className="flex items-center gap-1.5 font-semibold text-blue mb-1">
-                      <Brain size={12} />
-                      <span>Reasoning</span>
-                    </div>
-                    <div>{step.thought}</div>
-                  </div>
-                )}
-
-                {/* Tool Invocations */}
-                {step.toolCalls && step.toolCalls.map((tc) => (
-                  <div key={tc.id} className={`agent-tool-call ${tc.status}`}>
-                    <div className="agent-tool-title-row">
-                      <div className="agent-tool-name">
-                        {getToolIcon(tc.name)}
-                        <span>{tc.name}</span>
-                        {tc.args.path && <span className="text-muted">({tc.args.path})</span>}
-                      </div>
-                      <span className={`agent-tool-badge ${tc.status}`}>
-                        {tc.status === 'running' ? 'Executing...' : tc.status}
-                      </span>
-                    </div>
-
-                    {tc.resultMessage && (
-                      <div className="agent-tool-msg">{tc.resultMessage}</div>
-                    )}
-
-                    {/* Diff Preview */}
-                    {tc.diff && (
-                      <div className="agent-diff-card">
-                        <div className="agent-diff-header">
-                          Changes in {tc.diff.path}
-                        </div>
-                        <div className="agent-diff-body">
-                          <div className="diff-target">- {tc.diff.target}</div>
-                          <div className="diff-replacement">+ {tc.diff.replacement}</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* Completion Summary */}
-                {step.completedSummary && (
-                  <div className="agent-summary-card">
-                    <div className="flex items-center gap-1.5 font-bold">
-                      <CheckCircle2 size={14} className="text-green" />
-                      <span>Goal Achieved</span>
-                    </div>
-                    <div>{step.completedSummary}</div>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
 
             {/* Error Message */}
             {agentError && (
@@ -443,7 +405,7 @@ export const AiPanel: React.FC = () => {
 
             <div className="ai-panel-composer-footer">
               <span className="ai-context-hint">
-                Autonomous Mode: <strong>Groq & Gemini Tools</strong>
+                {modelShortName}
               </span>
 
               {isAgentRunning ? (
@@ -534,7 +496,7 @@ export const AiPanel: React.FC = () => {
 
             <div className="ai-panel-composer-footer">
               <span className="ai-context-hint">
-                Context: <strong>{activeFilePath}</strong>
+                {modelShortName}
               </span>
 
               <button

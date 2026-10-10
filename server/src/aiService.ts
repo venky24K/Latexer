@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const DEFAULT_SYSTEM_INSTRUCTION = `You are Latexer AI Copilot, a world-class scientific editor, computational linguist, and LaTeX typesetting authority.
+const DEFAULT_SYSTEM_INSTRUCTION = `You are ElseWhere AI Copilot, a world-class scientific editor, computational linguist, and LaTeX typesetting authority.
 You assist authors in writing academic manuscripts, research papers, presentations, and technical documentation with impeccable English grammar and flawless LaTeX.
 
 Guidelines:
@@ -303,6 +303,7 @@ export interface AiAgentStepResult {
   message: {
     role: 'assistant';
     content: string | null;
+    thought?: string;
     tool_calls?: Array<{
       id: string;
       type: 'function';
@@ -365,11 +366,14 @@ async function agentStepWithGroq(params: AiAgentStepParams): Promise<AiAgentStep
   const data = await res.json();
   const choice = data.choices?.[0];
   const msg = choice?.message;
+  const hasToolCalls = Boolean(msg?.tool_calls && msg.tool_calls.length > 0);
+  const userContent = msg?.content || (!hasToolCalls ? msg?.reasoning : null);
 
   return {
     message: {
       role: 'assistant',
-      content: msg?.content || msg?.reasoning || null,
+      content: userContent,
+      thought: msg?.reasoning || undefined,
       tool_calls: msg?.tool_calls || undefined,
     },
   };

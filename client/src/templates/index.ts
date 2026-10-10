@@ -29,7 +29,7 @@ export const TEMPLATES: Template[] = [
 \\usepackage{geometry}
 \\geometry{margin=1in}
 
-\\title{\\textbf{Latexer: A High-Performance Local-First Collaborative \\LaTeX{} Environment}}
+\\title{\\textbf{ElseWhere: A High-Performance Local-First Collaborative \\LaTeX{} Environment}}
 \\author{
   \\textbf{Jane Doe}$^1$, \\textbf{John Smith}$^2$ \\\\[0.5em]
   $^1$Department of Computer Science, University of Technology \\\\
@@ -43,11 +43,11 @@ export const TEMPLATES: Template[] = [
 \\maketitle
 
 \\begin{abstract}
-Collaborative scientific writing requires high responsiveness, seamless package management, and real-time visualization. This paper introduces Latexer, a full-stack, local-first \\LaTeX{} authoring suite engineered with modern web standards, an isolated backend compilation pipeline, and intelligent log diagnostic extraction. We evaluate compilation latency across major \\TeX{} distributions and demonstrate substantial efficiency improvements for academic workflows.
+Collaborative scientific writing requires high responsiveness, seamless package management, and real-time visualization. This paper introduces ElseWhere, a full-stack, local-first \\LaTeX{} authoring suite engineered with modern web standards, an isolated backend compilation pipeline, and intelligent log diagnostic extraction. We evaluate compilation latency across major \\TeX{} distributions and demonstrate substantial efficiency improvements for academic workflows.
 \\end{abstract}
 
 \\section{Introduction}
-Mathematical typesetting in scientific research relies fundamentally on \\LaTeX{} \\cite{lamport94}. However, existing platforms often suffer from high network latency, rigid container limitations, or complex local installation barriers. Latexer bridges this gap through a unified browser-to-engine architecture.
+Mathematical typesetting in scientific research relies fundamentally on \\LaTeX{} \\cite{lamport94}. However, existing platforms often suffer from high network latency, rigid container limitations, or complex local installation barriers. ElseWhere bridges this gap through a unified browser-to-engine architecture.
 
 \\section{System Architecture}
 Our environment incorporates three core subsystems:
@@ -89,7 +89,7 @@ pdflatex & 1.85 & 290 & Manual \\\\
 \\end{table}
 
 \\section{Conclusion}
-Latexer demonstrates that modern web frameworks paired with local compilation engines yield superior editing ergonomics and productivity for researchers worldwide.
+ElseWhere demonstrates that modern web frameworks paired with local compilation engines yield superior editing ergonomics and productivity for researchers worldwide.
 
 \\bibliographystyle{plain}
 \\bibliography{references}
@@ -205,7 +205,7 @@ University of California, Berkeley \\hfill Summa Cum Laude
 \\usetheme{Madrid}
 \\usecolortheme{whale}
 
-\\title[Latexer Overview]{\\textbf{Latexer: Modern Collaborative \\LaTeX{}}}
+\\title[ElseWhere Overview]{\\textbf{ElseWhere: Modern Collaborative \\LaTeX{}}}
 \\subtitle{Architectural Innovations and Implementation}
 \\author{Development Team}
 \\institute{Open Source Research}
@@ -222,7 +222,7 @@ University of California, Berkeley \\hfill Summa Cum Laude
 \\end{frame}
 
 \\section{Introduction}
-\\begin{frame}{Why Build Latexer?}
+\\begin{frame}{Why Build ElseWhere?}
   \\begin{itemize}
     \\item Traditional online editors rely on congested remote compute farms.
     \\item Local-first architecture delivers instantaneous editor feedback.
@@ -290,7 +290,7 @@ University of California, Berkeley \\hfill Summa Cum Laude
 \\maketitle
 
 \\section{Quick Start}
-Welcome to \\textbf{Latexer}! You can start typing \\LaTeX{} here. Press \\textbf{Ctrl+Enter} or \\textbf{Cmd+Enter} to recompile.
+Welcome to \\textbf{ElseWhere}! You can start typing \\LaTeX{} here. Press \\textbf{Ctrl+Enter} or \\textbf{Cmd+Enter} to recompile.
 
 \\section{Mathematics}
 Here is an inline equation: $E = mc^2$, and here is a numbered display equation:
