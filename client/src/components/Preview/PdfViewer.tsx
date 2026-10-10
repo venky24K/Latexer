@@ -12,7 +12,11 @@ import {
   AlertCircle,
   FileQuestion,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
+import { useLayoutStore } from '../../store/useLayoutStore';
+import { useAgentStore } from '../../store/useAgentStore';
+import { formatDoctorFixAllPrompt } from '../../services/aiDoctor';
 
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
@@ -26,10 +30,21 @@ export const PdfViewer: React.FC = () => {
     pdfUrl,
     compilationState,
     errors,
+    rawLog,
     toggleLogsDrawer,
     compileNow,
     downloadPdf,
   } = useProjectStore();
+
+  const { setActiveSidebarTab } = useLayoutStore();
+  const { isRunning: isAgentRunning, startAgentTask } = useAgentStore();
+
+  const handleFixWithDoctor = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const prompt = formatDoctorFixAllPrompt(errors, rawLog);
+    setActiveSidebarTab('ai');
+    startAgentTask(prompt);
+  };
 
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [numPages, setNumPages] = useState<number>(0);
@@ -218,9 +233,38 @@ export const PdfViewer: React.FC = () => {
       )}
 
       {errors.length > 0 && compilationState === 'error' && (
-        <div className="error-floating-banner" onClick={() => toggleLogsDrawer(true)}>
-          <AlertCircle size={15} />
-          <span>Compilation failed with {errors.length} error(s). Click to view diagnostics.</span>
+        <div className="error-floating-banner">
+          <div className="error-banner-info" onClick={() => toggleLogsDrawer(true)}>
+            <AlertCircle size={15} />
+            <span>Compilation failed ({errors.length} {errors.length === 1 ? 'error' : 'errors'})</span>
+          </div>
+          <div className="error-banner-actions">
+            <button
+              className="btn-error-doctor-action"
+              onClick={handleFixWithDoctor}
+              disabled={isAgentRunning}
+              title="Auto-Fix all errors with AI Doctor"
+            >
+              {isAgentRunning ? (
+                <>
+                  <Loader2 size={12} className="spin" />
+                  <span>Fixing...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={12} />
+                  <span>Fix with AI Doctor</span>
+                </>
+              )}
+            </button>
+            <button
+              className="btn-error-logs-action"
+              onClick={() => toggleLogsDrawer(true)}
+              title="View compiler diagnostics"
+            >
+              Logs
+            </button>
+          </div>
         </div>
       )}
 
