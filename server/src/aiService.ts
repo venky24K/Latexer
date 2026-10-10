@@ -53,7 +53,10 @@ async function chatWithGroq(params: AiChatParams): Promise<string> {
     throw new Error('Groq API key is required. Please set it in AI Settings or server .env.');
   }
 
-  const model = params.model && !params.model.startsWith('gemini-') ? params.model : 'openai/gpt-oss-120b';
+  let model = params.model && !params.model.startsWith('gemini-') ? params.model : 'openai/gpt-oss-120b';
+  if (model.includes('llama')) {
+    model = 'openai/gpt-oss-120b';
+  }
 
   // Construct message chain for OpenAI-compatible endpoint
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
@@ -109,7 +112,7 @@ async function chatWithGroq(params: AiChatParams): Promise<string> {
 
   const data = await res.json();
   const choice = data.choices?.[0];
-  return choice?.message?.content || choice?.text || 'No response generated.';
+  return choice?.message?.content || choice?.message?.reasoning || choice?.text || 'No response generated.';
 }
 
 async function inlineEditWithGroq(params: AiInlineParams): Promise<string> {
@@ -118,7 +121,10 @@ async function inlineEditWithGroq(params: AiInlineParams): Promise<string> {
     throw new Error('Groq API key is required. Please set it in AI Settings or server .env.');
   }
 
-  const model = params.model && !params.model.startsWith('gemini-') ? params.model : 'openai/gpt-oss-120b';
+  let model = params.model && !params.model.startsWith('gemini-') ? params.model : 'openai/gpt-oss-120b';
+  if (model.includes('llama')) {
+    model = 'openai/gpt-oss-120b';
+  }
 
   const userContent = `Instruction: ${params.instruction}
 
@@ -314,7 +320,10 @@ async function agentStepWithGroq(params: AiAgentStepParams): Promise<AiAgentStep
     throw new Error('Groq API key is required for agent execution.');
   }
 
-  const model = params.model && !params.model.startsWith('gemini-') ? params.model : 'openai/gpt-oss-120b';
+  let model = params.model && !params.model.startsWith('gemini-') ? params.model : 'openai/gpt-oss-120b';
+  if (model.includes('llama')) {
+    model = 'openai/gpt-oss-120b';
+  }
 
   const tools = params.tools.map((t) => ({
     type: 'function',
@@ -325,6 +334,13 @@ async function agentStepWithGroq(params: AiAgentStepParams): Promise<AiAgentStep
     },
   }));
 
+  const cleanedMessages = params.messages.map((m) => {
+    if (m.role === 'assistant' && m.tool_calls && m.tool_calls.length > 0 && !m.content) {
+      return { ...m, content: null };
+    }
+    return m;
+  });
+
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -333,7 +349,7 @@ async function agentStepWithGroq(params: AiAgentStepParams): Promise<AiAgentStep
     },
     body: JSON.stringify({
       model,
-      messages: params.messages,
+      messages: cleanedMessages,
       tools: tools.length > 0 ? tools : undefined,
       tool_choice: tools.length > 0 ? 'auto' : undefined,
       temperature: params.temperature ?? 0.2,
@@ -353,7 +369,7 @@ async function agentStepWithGroq(params: AiAgentStepParams): Promise<AiAgentStep
   return {
     message: {
       role: 'assistant',
-      content: msg?.content || null,
+      content: msg?.content || msg?.reasoning || null,
       tool_calls: msg?.tool_calls || undefined,
     },
   };
@@ -374,22 +390,20 @@ async function agentStepWithGemini(params: AiAgentStepParams): Promise<AiAgentSt
     parameters: t.parameters as any,
   }));
 
+  const systemMsg = params.messages.find((m) => m.role === 'system');
+  const systemInstruction = systemMsg?.content || undefined;
+
   const model = genAI.getGenerativeModel({
     model: modelName,
+    systemInstruction,
     tools: functionDeclarations.length > 0 ? [{ functionDeclarations }] : undefined,
   });
 
   const contents: any[] = [];
   for (const m of params.messages) {
     if (m.role === 'system') {
-      contents.push({
-        role: 'user',
-        parts: [{ text: `[SYSTEM INSTRUCTION]: ${m.content || ''}` }],
-      });
-      contents.push({
-        role: 'model',
-        parts: [{ text: 'Understood. I will act as the Latexer Agent and use tools appropriately.' }],
-      });
+      // System prompt is configured in getGenerativeModel
+      continue;
     } else if (m.role === 'user') {
       contents.push({
         role: 'user',
@@ -400,42 +414,53 @@ async function agentStepWithGemini(params: AiAgentStepParams): Promise<AiAgentSt
       if (m.content) parts.push({ text: m.content });
       if (m.tool_calls) {
         for (const tc of m.tool_calls) {
+          let argsObj: any = {};
           try {
-            parts.push({
-              functionCall: {
-                name: tc.function.name,
-                args: JSON.parse(tc.function.arguments),
-              },
-            });
+            argsObj = typeof tc.function.arguments === 'string'
+              ? JSON.parse(tc.function.arguments)
+              : (tc.function.arguments || {});
           } catch {
-            parts.push({
-              functionCall: {
-                name: tc.function.name,
-                args: {},
-              },
-            });
+            argsObj = {};
           }
+          parts.push({
+            functionCall: {
+              name: tc.function.name,
+              args: argsObj,
+            },
+          });
         }
       }
-      contents.push({ role: 'model', parts });
+      if (parts.length > 0) {
+        contents.push({ role: 'model', parts });
+      }
     } else if (m.role === 'tool') {
       let parsedResponse: any;
       try {
-        parsedResponse = JSON.parse(m.content || '{}');
+        parsedResponse = typeof m.content === 'string' ? JSON.parse(m.content || '{}') : (m.content || {});
+        if (typeof parsedResponse !== 'object' || parsedResponse === null || Array.isArray(parsedResponse)) {
+          parsedResponse = { output: parsedResponse };
+        }
       } catch {
         parsedResponse = { output: m.content };
       }
-      contents.push({
-        role: 'user',
-        parts: [
-          {
-            functionResponse: {
-              name: m.name || 'tool_response',
-              response: parsedResponse,
-            },
-          },
-        ],
-      });
+
+      const functionResponsePart = {
+        functionResponse: {
+          name: m.name || 'tool_response',
+          response: parsedResponse,
+        },
+      };
+
+      // In Gemini, parallel function responses should be batched in the same 'function' turn
+      const lastTurn = contents[contents.length - 1];
+      if (lastTurn && lastTurn.role === 'function') {
+        lastTurn.parts.push(functionResponsePart);
+      } else {
+        contents.push({
+          role: 'function',
+          parts: [functionResponsePart],
+        });
+      }
     }
   }
 

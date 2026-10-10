@@ -285,12 +285,12 @@ export async function executeAgentTool(
     case 'compile_and_diagnose': {
       const engine = args.engine || store.selectedEngine || 'auto';
       try {
-        const res = await compileWorkspace(Object.values(files), engine);
+        const res = await compileWorkspace(Object.values(files), 'main.tex', engine);
 
         // Update project store with real build results
         useProjectStore.setState({
           compilationState: res.success ? 'success' : 'error',
-          pdfUrl: res.pdfUrl ? `/api/pdf/${res.pdfUrl}?t=${Date.now()}` : null,
+          pdfUrl: res.pdfUrl ? `${res.pdfUrl}?t=${Date.now()}` : null,
           compileDuration: res.durationMs,
           errors: res.errors || [],
           warnings: res.warnings || [],

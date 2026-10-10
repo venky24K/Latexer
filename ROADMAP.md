@@ -48,7 +48,7 @@ flowchart TB
     subgraph Engines ["Host TeX Engines & External Services"]
         Tectonic["Tectonic (Cloudflare Package Auto-Fetch)"]
         TeXLive["TeXLive / MacTeX (latexmk, pdflatex, xelatex)"]
-        GroqAPI["Groq LPU (GPT-OSS 120B / Qwen 27B / Reasoning Models)"]
+        GroqAPI["Groq LPU (GPT-OSS 120B / Qwen 27B / GPT-OSS 20B)"]
         GeminiAPI["Google Gemini (2.0 Flash / 1.5 Pro / Thinking)"]
         arXivCrossRef["arXiv & CrossRef Literature APIs"]
     end
@@ -146,7 +146,7 @@ flowchart TB
 ## 🤖 Phase 3: Dual AI Copilot, VS Code Activity Bar & Multi-View Sidebar `[COMPLETED]`
 
 - [x] **Dual AI Engine Architecture (Groq LPU & Google Gemini)** (`aiService.ts`, `aiApi.ts`, `useAiStore.ts`):
-  - **Groq LPU Ultra-Fast Acceleration**: Sub-300ms completion speeds (~250+ tokens/sec) for publication-grade grammar, academic writing, and LaTeX equations via **GPT-OSS 120B** (`openai/gpt-oss-120b`), **Qwen 3.8 27B** (`qwen/qwen3.8-27b`), and **GPT-OSS 20B**.
+  - **Groq LPU Ultra-Fast Acceleration**: Sub-300ms completion speeds (~250+ tokens/sec) for publication-grade grammar, academic writing, and LaTeX equations via **GPT-OSS 120B** (`openai/gpt-oss-120b`), **Qwen 3.8 27B** (`qwen/qwen3.8-27b`), and **GPT-OSS 20B** (`openai/gpt-oss-20b`).
   - **Google Gemini Engine**: Native support for **Gemini 1.5 Flash**, **Gemini 1.5 Pro**, and **Gemini 2.0 Flash**.
   - Clean API key management: untracked `.env` backend keys with client override capability in `localStorage`.
 - [x] **VS Code-Style Activity Bar Rail** (`ActivityBar.tsx`):

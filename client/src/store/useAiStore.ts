@@ -68,13 +68,23 @@ const DEFAULT_GROQ_KEY = '';
 const DEFAULT_MODEL = 'openai/gpt-oss-120b';
 
 const INITIAL_SUPPORTED_MODELS: SupportedModel[] = [
-  { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B (Groq • Deep Grammar & Research Writing)', provider: 'groq' },
-  { id: 'qwen/qwen3.8-27b', name: 'Qwen 3.8 27B (Groq • High-Speed Grammar & Edits)', provider: 'groq' },
-  { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B (Groq • Instant Lightweight)', provider: 'groq' },
-  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Google)', provider: 'gemini' },
+  { id: 'openai/gpt-oss-120b', name: 'OpenAI GPT-OSS 120B (Groq • Deep Reasoning & MoE)', provider: 'groq' },
+  { id: 'qwen/qwen3.8-27b', name: 'Qwen 3.8 27B (Groq • High-Speed Multimodal & Tools)', provider: 'groq' },
+  { id: 'openai/gpt-oss-20b', name: 'OpenAI GPT-OSS 20B (Groq • Fast Lightweight Execution)', provider: 'groq' },
   { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Google)', provider: 'gemini' },
+  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Google)', provider: 'gemini' },
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Google)', provider: 'gemini' },
 ];
+
+function getStoredModel(): string {
+  if (typeof window === 'undefined') return DEFAULT_MODEL;
+  const stored = localStorage.getItem(LOCAL_MODEL_KEY);
+  if (!stored || stored.includes('llama')) {
+    localStorage.setItem(LOCAL_MODEL_KEY, DEFAULT_MODEL);
+    return DEFAULT_MODEL;
+  }
+  return stored;
+}
 
 export const useAiStore = create<AiState>((set, get) => ({
   provider: (typeof window !== 'undefined'
@@ -82,7 +92,7 @@ export const useAiStore = create<AiState>((set, get) => ({
     : 'groq'),
   groqKey: typeof window !== 'undefined' ? localStorage.getItem(LOCAL_GROQ_KEY) || DEFAULT_GROQ_KEY : DEFAULT_GROQ_KEY,
   geminiKey: typeof window !== 'undefined' ? localStorage.getItem(LOCAL_GEMINI_KEY) || '' : '',
-  selectedModel: typeof window !== 'undefined' ? localStorage.getItem(LOCAL_MODEL_KEY) || DEFAULT_MODEL : DEFAULT_MODEL,
+  selectedModel: getStoredModel(),
   serverConfigured: true,
   hasGroq: true,
   hasGemini: false,
