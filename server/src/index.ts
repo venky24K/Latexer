@@ -55,8 +55,15 @@ app.get('/api/pdf/:buildId', (req, res) => {
     return res.status(404).send('PDF build expired or not found.');
   }
 
+  const queryFilename = req.query.filename as string | undefined;
+  const isDownload = req.query.download === '1' || req.query.download === 'true';
+  const filename = queryFilename
+    ? (queryFilename.endsWith('.pdf') ? queryFilename : `${queryFilename}.pdf`)
+    : cached.filename;
+
+  const dispositionType = isDownload ? 'attachment' : 'inline';
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `inline; filename="${cached.filename}"`);
+  res.setHeader('Content-Disposition', `${dispositionType}; filename="${filename}"`);
   res.send(cached.buffer);
 });
 

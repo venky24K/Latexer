@@ -385,16 +385,29 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     saveAs(blob, `${cleanName}.zip`);
   },
 
-  downloadPdf: () => {
+  downloadPdf: async () => {
     const { pdfUrl, projectName } = get();
     if (!pdfUrl) return;
-    const cleanName = projectName.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'document';
-    const link = document.createElement('a');
-    link.href = pdfUrl;
-    link.download = `${cleanName}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const cleanName =
+      projectName
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_\-]/g, '') || 'document';
+
+    try {
+      const response = await fetch(pdfUrl);
+      if (!response.ok) throw new Error('Failed to fetch PDF');
+      const blob = await response.blob();
+      saveAs(blob, `${cleanName}.pdf`);
+    } catch {
+      const link = document.createElement('a');
+      link.href = `${pdfUrl}?filename=${encodeURIComponent(cleanName)}.pdf&download=1`;
+      link.download = `${cleanName}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   },
 
   initProject: async () => {

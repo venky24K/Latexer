@@ -477,8 +477,8 @@ export const TopNav: React.FC = () => {
       />
 
       <header className="h-10 min-h-[40px] bg-sidebar border-b border-border-subtle flex items-center justify-between px-3 z-20 select-none">
-        {/* Left: Brand, Project Name, and Desktop Menus */}
-        <div className="flex items-center gap-2">
+        {/* Left: Brand and Desktop Menus */}
+        <div className="flex items-center gap-2 shrink-0">
           {/* Brand Logo & Name */}
           <div className="flex items-center gap-1.5 mr-1">
             <img
@@ -490,17 +490,6 @@ export const TopNav: React.FC = () => {
               ElseWhere
             </span>
           </div>
-
-          <div className="w-px h-3.5 bg-border-subtle mx-0.5" />
-
-          {/* Project Name */}
-          <input
-            type="text"
-            className="bg-transparent border border-transparent hover:border-border-subtle hover:bg-card text-text-primary text-xs font-medium px-2 py-0.5 rounded transition-all duration-150 w-[130px] focus:w-[180px] outline-none focus:bg-card focus:border-brand/50"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            title="Click to rename project"
-          />
 
           <div className="w-px h-3.5 bg-border-subtle mx-0.5" />
 
@@ -573,8 +562,21 @@ export const TopNav: React.FC = () => {
           </nav>
         </div>
 
+        {/* Center / Title Bar: Full Document Name */}
+        <div className="flex-1 flex items-center justify-center px-4 min-w-0">
+          <input
+            type="text"
+            className="bg-card/40 hover:bg-card focus:bg-card border border-border-subtle/40 hover:border-border-subtle focus:border-brand/40 text-text-primary text-xs font-medium px-4 py-1 rounded-md transition-all text-center min-w-[280px] max-w-[560px] outline-none shadow-2xs"
+            style={{ width: `${Math.min(540, Math.max(320, (projectName?.length || 10) * 8.5 + 48))}px` }}
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            title="Click to rename document"
+            placeholder="Untitled Document"
+          />
+        </div>
+
         {/* Right: Layout Switcher & Settings */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Workspace Layout Mode Segmented Control */}
           <div
             className="flex items-center bg-card-hover border border-border-subtle rounded p-0.5 gap-0.5"
