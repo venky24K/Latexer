@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useLayoutStore } from '../../store/useLayoutStore';
 import { useAgentStore } from '../../store/useAgentStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import { formatDoctorFixAllPrompt } from '../../services/aiDoctor';
 
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -38,6 +39,7 @@ export const PdfViewer: React.FC = () => {
 
   const { setActiveSidebarTab } = useLayoutStore();
   const { isRunning: isAgentRunning, startAgentTask } = useAgentStore();
+  const darkModePdf = useSettingsStore((s) => s.darkModePdf);
 
   const handleFixWithDoctor = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -501,7 +503,7 @@ export const PdfViewer: React.FC = () => {
         )}
 
         {/* Render pages */}
-        <div className="flex flex-col gap-5 items-center">
+        <div className={`flex flex-col gap-5 items-center transition-all duration-200 ${darkModePdf ? 'invert contrast-105 hue-rotate-180 brightness-95' : ''}`}>
           {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => (
             <div key={pageNum} className="relative bg-white rounded-[3px] shadow-[0_8px_30px_rgba(44,38,30,0.18),0_2px_6px_rgba(44,38,30,0.08)] flex flex-col">
               <canvas

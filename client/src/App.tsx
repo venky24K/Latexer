@@ -4,6 +4,7 @@ import { WorkspaceLayout } from './components/Layout/WorkspaceLayout';
 import { TemplateModal } from './components/Modals/TemplateModal';
 import { HostSetupModal } from './components/Modals/HostSetupModal';
 import { AiSettingsModal } from './components/Modals/AiSettingsModal';
+import { SettingsModal } from './components/Modals/SettingsModal';
 import { useProjectStore } from './store/useProjectStore';
 import { useAiStore } from './store/useAiStore';
 
@@ -25,6 +26,7 @@ export function App() {
       <TemplateModal />
       <HostSetupModal />
       <AiSettingsModal />
+      <SettingsModal />
     </div>
   );
 }

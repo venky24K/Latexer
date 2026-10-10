@@ -2,6 +2,7 @@ import React from 'react';
 import { useLayoutStore, type SidebarTab } from '../../store/useLayoutStore';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAiStore } from '../../store/useAiStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import {
   Files,
   Search,
@@ -18,7 +19,8 @@ export const ActivityBar: React.FC = () => {
   } = useLayoutStore();
 
   const { files } = useProjectStore();
-  const { setSettingsModalOpen, provider } = useAiStore();
+  const { provider } = useAiStore();
+  const setIsSettingsOpen = useSettingsStore((s) => s.setIsOpen);
 
   const fileCount = Object.keys(files).length;
 
@@ -90,8 +92,8 @@ export const ActivityBar: React.FC = () => {
         <button
           type="button"
           className="w-full h-11 bg-transparent border-none border-l-2 border-l-transparent text-text-muted flex items-center justify-center cursor-pointer transition-all duration-150 hover:text-text-primary hover:bg-[rgba(44,38,30,0.05)]"
-          onClick={() => setSettingsModalOpen(true)}
-          title="AI & Engine Settings"
+          onClick={() => setIsSettingsOpen(true)}
+          title="Project & Editor Settings"
         >
           <Settings size={18} />
         </button>

@@ -6,6 +6,7 @@ import { useAiStore } from '../../store/useAiStore';
 import { useAgentStore } from '../../store/useAgentStore';
 import { sendAiInlineCompletionRequest } from '../../services/aiApi';
 import { InlineCommandPalette } from '../AI/InlineCommandPalette';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import { FileText, Image as ImageIcon, X, FileCode, BookOpen, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const MonacoLatexEditor: React.FC = () => {
@@ -28,6 +29,16 @@ export const MonacoLatexEditor: React.FC = () => {
     openInlineCommand,
     registerEditorActions,
   } = useAiStore();
+
+  const {
+    fontSize,
+    fontFamily,
+    lineHeight,
+    wordWrap,
+    lineNumbers,
+    bracketPairColorization,
+    editorTheme,
+  } = useSettingsStore();
 
   const editorRef = useRef<any>(null);
   const diffEditorRef = useRef<any>(null);
@@ -629,7 +640,7 @@ export const MonacoLatexEditor: React.FC = () => {
           <DiffEditor
             height="100%"
             language={language}
-            theme="elsewhere-warm"
+            theme={editorTheme}
             beforeMount={setupMonacoLatex}
             original={pendingEdit.originalContent}
             modified={pendingEdit.newContent}
@@ -678,11 +689,11 @@ export const MonacoLatexEditor: React.FC = () => {
               compactMode: true,
               readOnly: false,
               originalEditable: false,
-              fontSize: 12,
+              fontSize,
               fontWeight: '400',
-              fontFamily: "'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', monospace",
+              fontFamily,
               fontLigatures: true,
-              lineHeight: 19,
+              lineHeight,
               lineNumbers: 'on',
               lineNumbersMinChars: 3,
               glyphMargin: false,
@@ -690,7 +701,7 @@ export const MonacoLatexEditor: React.FC = () => {
               lineDecorationsWidth: 4,
               minimap: { enabled: false },
               scrollBeyondLastLine: false,
-              wordWrap: 'on',
+              wordWrap: wordWrap ? 'on' : 'off',
               automaticLayout: true,
               renderWhitespace: 'selection',
               smoothScrolling: true,
@@ -787,26 +798,26 @@ export const MonacoLatexEditor: React.FC = () => {
           <Editor
             height="100%"
             language={language}
-            theme="elsewhere-warm"
+            theme={editorTheme}
             beforeMount={setupMonacoLatex}
             value={activeFile?.content || ''}
             onChange={handleContentChange}
             onMount={handleEditorDidMount}
             options={{
-              fontSize: 12,
+              fontSize,
               fontWeight: '400',
-              fontFamily: "'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', monospace",
+              fontFamily,
               fontLigatures: true,
-              lineHeight: 19,
+              lineHeight,
               minimap: { enabled: false },
               scrollBeyondLastLine: false,
-              wordWrap: 'on',
+              wordWrap: wordWrap ? 'on' : 'off',
               automaticLayout: true,
               tabSize: 2,
               insertSpaces: true,
               suggestOnTriggerCharacters: true,
-              bracketPairColorization: { enabled: true },
-              lineNumbers: 'on',
+              bracketPairColorization: { enabled: bracketPairColorization },
+              lineNumbers,
               lineNumbersMinChars: 3,
               glyphMargin: false,
               lineDecorationsWidth: 4,

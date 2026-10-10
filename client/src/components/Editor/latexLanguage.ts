@@ -415,5 +415,33 @@ export const setupMonacoLatex = (monaco: Monaco) => {
     },
   });
 
+  // Register classic Xcode theme (as seen in Overleaf)
+  monaco.editor.defineTheme('xcode', {
+    base: 'vs',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '707F8F', fontStyle: 'italic' },
+      { token: 'keyword', foreground: 'AA0D91' },
+      { token: 'keyword.control', foreground: 'AA0D91' },
+      { token: 'entity.name.function', foreground: '5C2699' },
+      { token: 'type', foreground: '703DAA' },
+      { token: 'tag', foreground: '1C00CF' },
+      { token: 'number', foreground: '1C00CF' },
+      { token: 'delimiter', foreground: '2A2A2A' },
+      { token: 'string.math', foreground: 'C41A16' },
+      { token: 'string', foreground: 'C41A16' },
+    ],
+    colors: {
+      'editor.background': '#FFFFFF',
+      'editor.foreground': '#000000',
+      'editorCursor.foreground': '#000000',
+      'editorLineNumber.foreground': '#929292',
+      'editorLineNumber.activeForeground': '#000000',
+      'editor.selectionBackground': '#B5D5FF',
+      'editor.lineHighlightBackground': '#F5F5F5',
+      'editorGutter.background': '#FFFFFF',
+    },
+  });
+
   monaco.editor.setTheme('elsewhere-warm');
 };

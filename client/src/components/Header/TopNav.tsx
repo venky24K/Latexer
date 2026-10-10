@@ -4,7 +4,6 @@ import { useLayoutStore } from '../../store/useLayoutStore';
 import {
   Play,
   Terminal,
-  Cpu,
   CheckCircle2,
   XCircle,
   Loader2,
@@ -12,7 +11,9 @@ import {
   Code2,
   BookOpen,
   RotateCcw,
+  Settings,
 } from 'lucide-react';
+import { useSettingsStore } from '../../store/useSettingsStore';
 
 export const TopNav: React.FC = () => {
   const {
@@ -23,10 +24,6 @@ export const TopNav: React.FC = () => {
     errors,
     warnings,
     compileNow,
-    selectedEngine,
-    setSelectedEngine,
-    autoCompile,
-    setAutoCompile,
     toggleLogsDrawer,
     logsDrawerOpen,
   } = useProjectStore();
@@ -36,6 +33,8 @@ export const TopNav: React.FC = () => {
     setViewMode,
     resetLayout,
   } = useLayoutStore();
+
+  const setIsSettingsOpen = useSettingsStore((s) => s.setIsOpen);
 
   const isCompiling = compilationState === 'compiling';
   const hasErrors = errors.length > 0;
@@ -63,60 +62,31 @@ export const TopNav: React.FC = () => {
 
       {/* Center: Recompile Button & Status */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center bg-card rounded-md border border-border-subtle p-0.5 shadow-sm">
-          <button
-            className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold text-white transition-all duration-150 cursor-pointer ${
-              isCompiling
-                ? 'bg-brand/70 cursor-not-allowed'
-                : hasErrors
-                ? 'bg-accent-red hover:bg-accent-red/90'
-                : 'bg-brand hover:bg-brand-hover shadow-sm'
-            }`}
-            onClick={compileNow}
-            disabled={isCompiling}
-            title="Recompile Project (Cmd+Enter or Ctrl+Enter)"
-          >
-            {isCompiling ? (
-              <>
-                <Loader2 className="spin" size={14} />
-                <span>Compiling...</span>
-              </>
-            ) : (
-              <>
-                <Play className="fill-current" size={14} />
-                <span>Recompile</span>
-                <span className="text-[10px] bg-black/20 px-1 py-0.5 rounded font-mono">⌘↵</span>
-              </>
-            )}
-          </button>
-
-          {/* Engine Selector */}
-          <div className="flex items-center gap-1 px-2 text-text-muted" title="Select LaTeX Compilation Engine">
-            <Cpu size={14} />
-            <select
-              value={selectedEngine}
-              onChange={(e) => setSelectedEngine(e.target.value)}
-              className="bg-transparent border-none text-text-secondary text-[11.5px] font-medium outline-none cursor-pointer"
-            >
-              <option value="auto">Engine: Auto</option>
-              <option value="tectonic">Tectonic</option>
-              <option value="latexmk">LaTeXmk</option>
-              <option value="pdflatex">pdfLaTeX</option>
-              <option value="xelatex">XeLaTeX</option>
-            </select>
-          </div>
-
-          {/* Auto-compile switch */}
-          <label className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-text-secondary cursor-pointer hover:bg-card-hover select-none" title="Toggle Auto-compile on save or edit">
-            <input
-              type="checkbox"
-              checked={autoCompile}
-              onChange={(e) => setAutoCompile(e.target.checked)}
-              className="accent-brand cursor-pointer"
-            />
-            <span className="text-[11px] font-medium">Auto</span>
-          </label>
-        </div>
+        <button
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-white transition-all duration-150 cursor-pointer shadow-sm ${
+            isCompiling
+              ? 'bg-brand/70 cursor-not-allowed'
+              : hasErrors
+              ? 'bg-accent-red hover:bg-accent-red/90'
+              : 'bg-brand hover:bg-brand-hover'
+          }`}
+          onClick={compileNow}
+          disabled={isCompiling}
+          title="Recompile Project (Cmd+Enter or Ctrl+Enter)"
+        >
+          {isCompiling ? (
+            <>
+              <Loader2 className="animate-spin" size={14} />
+              <span>Compiling...</span>
+            </>
+          ) : (
+            <>
+              <Play className="fill-current" size={13} />
+              <span>Recompile</span>
+              <span className="text-[10px] bg-black/20 px-1 py-0.5 rounded font-mono">⌘↵</span>
+            </>
+          )}
+        </button>
 
         {/* Status indicator */}
         <div
@@ -211,6 +181,15 @@ export const TopNav: React.FC = () => {
             <RotateCcw size={12} />
           </button>
         </div>
+
+        {/* Settings modal trigger */}
+        <button
+          className="w-7 h-7 rounded-md flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-card border border-border-subtle transition-all duration-150 cursor-pointer shadow-2xs"
+          onClick={() => setIsSettingsOpen(true)}
+          title="Open Settings"
+        >
+          <Settings size={14} />
+        </button>
       </div>
     </header>
   );
