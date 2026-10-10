@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Editor, { DiffEditor, type Monaco, type OnMount } from '@monaco-editor/react';
 import { setupMonacoLatex } from './latexLanguage';
 import { useProjectStore } from '../../store/useProjectStore';
@@ -6,7 +6,7 @@ import { useAiStore } from '../../store/useAiStore';
 import { useAgentStore } from '../../store/useAgentStore';
 import { sendAiInlineCompletionRequest } from '../../services/aiApi';
 import { InlineCommandPalette } from '../AI/InlineCommandPalette';
-import { FileText, Image as ImageIcon, Sparkles, X, FileCode, BookOpen, Check, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import { FileText, Image as ImageIcon, X, FileCode, BookOpen, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const MonacoLatexEditor: React.FC = () => {
   const {
@@ -15,6 +15,7 @@ export const MonacoLatexEditor: React.FC = () => {
     openTabs,
     setActiveFile,
     closeTab,
+    closeOtherTabs,
     updateFileContent,
     errors,
     warnings,
@@ -26,9 +27,6 @@ export const MonacoLatexEditor: React.FC = () => {
   const {
     openInlineCommand,
     registerEditorActions,
-    ghostTextEnabled,
-    toggleGhostText,
-    isGhostTextLoading,
   } = useAiStore();
 
   const editorRef = useRef<any>(null);
@@ -36,6 +34,21 @@ export const MonacoLatexEditor: React.FC = () => {
   const monacoRef = useRef<Monaco | null>(null);
   const autoCompileTimerRef = useRef<NodeJS.Timeout | null>(null);
   const inlineProviderRef = useRef<any>(null);
+
+  const [tabContextMenu, setTabContextMenu] = useState<{ x: number; y: number; tabPath: string } | null>(null);
+
+  const handleTabContextMenu = (e: React.MouseEvent, tabPath: string) => {
+    e.preventDefault();
+    setTabContextMenu({ x: e.clientX, y: e.clientY, tabPath });
+  };
+
+  useEffect(() => {
+    const handleClose = () => setTabContextMenu(null);
+    if (tabContextMenu) {
+      window.addEventListener('click', handleClose);
+      return () => window.removeEventListener('click', handleClose);
+    }
+  }, [tabContextMenu]);
 
   const pendingEdits = useAgentStore((state) => state.pendingEdits);
   const acceptEdit = useAgentStore((state) => state.acceptEdit);
@@ -468,9 +481,9 @@ export const MonacoLatexEditor: React.FC = () => {
 
   return (
     <div className="relative flex-1 flex flex-col h-full bg-editor overflow-hidden">
-      {/* Multi-File Tab Pills Bar */}
-      <div className="h-[38px] bg-sidebar border-b border-border-subtle flex items-center justify-between px-2 select-none z-[4] shrink-0">
-        <div className="flex items-center gap-1 overflow-x-auto overflow-y-hidden flex-1 min-w-0 h-full" role="tablist">
+      {/* Multi-File Tab Bar */}
+      <div className="h-[38px] bg-app border-b border-border-subtle flex items-end justify-between px-2 select-none z-[4] shrink-0">
+        <div className="flex items-end gap-1 overflow-x-auto overflow-y-hidden flex-1 min-w-0 h-full" role="tablist">
           {openTabs.map((tabPath) => {
             const isActive = tabPath === activeFilePath;
             const isPending = Boolean(pendingEdits[tabPath]);
@@ -479,10 +492,10 @@ export const MonacoLatexEditor: React.FC = () => {
                 key={tabPath}
                 role="tab"
                 aria-selected={isActive}
-                className={`group flex items-center gap-1.5 px-3 py-1 h-[28px] rounded text-xs font-medium cursor-pointer transition-all border border-transparent select-none shrink-0 ${
+                className={`group relative flex items-center gap-1.5 px-3 h-[31px] rounded-t-md text-xs font-medium cursor-pointer transition-all border border-b-0 select-none shrink-0 ${
                   isActive
-                    ? 'bg-card text-text-primary border-border-subtle shadow-xs'
-                    : 'text-text-muted hover:text-text-primary hover:bg-card/50'
+                    ? 'bg-editor text-text-primary border-border-subtle font-semibold shadow-xs z-[2] -mb-px'
+                    : 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-card/70 border-transparent'
                 } ${isPending ? 'border-b-2 border-b-amber-500!' : ''}`}
                 onClick={() => setActiveFile(tabPath)}
                 onAuxClick={(e) => {
@@ -491,63 +504,113 @@ export const MonacoLatexEditor: React.FC = () => {
                     closeTab(tabPath);
                   }
                 }}
+                onContextMenu={(e) => handleTabContextMenu(e, tabPath)}
                 title={isPending ? `${tabPath} (Pending AI changes)` : tabPath}
               >
-                {getTabIcon(tabPath)}
-                <span className="truncate max-w-[140px]">{tabPath}</span>
+                {/* Active tab top indicator accent */}
+                {isActive && (
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-brand rounded-t-md" />
+                )}
+
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {getTabIcon(tabPath)}
+                  <span className={`truncate max-w-[140px] ${isActive ? 'text-text-primary font-semibold' : 'text-text-secondary'}`}>
+                    {tabPath}
+                  </span>
+                </div>
+
                 {isPending && (
                   <span className="text-[9px] font-bold text-amber-600 bg-amber-500/15 px-1 py-0.5 rounded ml-0.5" title="Pending changes to review">
                     M
                   </span>
                 )}
-                {openTabs.length > 1 && (
-                  <button
-                    type="button"
-                    className="opacity-0 group-hover:opacity-100 hover:bg-black/10 text-text-muted hover:text-text-primary p-0.5 rounded transition-all cursor-pointer border-0 bg-transparent ml-0.5"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      closeTab(tabPath);
-                    }}
-                    title="Close tab (⌘W)"
-                  >
-                    <X size={11} />
-                  </button>
-                )}
+
+                {/* Visible Close Button */}
+                <button
+                  type="button"
+                  className={`w-[18px] h-[18px] rounded flex items-center justify-center transition-all cursor-pointer border-0 bg-transparent ml-1 ${
+                    isActive
+                      ? 'text-text-secondary hover:text-text-primary hover:bg-black/10 opacity-70 hover:opacity-100'
+                      : 'text-text-muted hover:text-text-primary hover:bg-black/10 opacity-0 group-hover:opacity-100'
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeTab(tabPath);
+                  }}
+                  title="Close tab (⌘W)"
+                >
+                  <X size={12} />
+                </button>
               </div>
             );
           })}
         </div>
-
-        <div className="flex items-center gap-2 shrink-0 ml-2">
-          <button
-            type="button"
-            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium border cursor-pointer transition-all ${
-              ghostTextEnabled
-                ? 'bg-amber-500/10 text-amber-700 border-amber-500/30 font-semibold'
-                : 'bg-transparent text-text-muted border-border-subtle hover:text-text-primary hover:bg-card'
-            }`}
-            onClick={() => toggleGhostText()}
-            title={`Copilot Ghost Text: ${ghostTextEnabled ? 'Active (Tab to accept, ⌥\\ to trigger)' : 'Disabled'}. Click to toggle.`}
-          >
-            <Zap size={11} className={ghostTextEnabled ? 'text-amber-500' : 'text-text-muted'} />
-            <span>{isGhostTextLoading ? 'Thinking...' : ghostTextEnabled ? 'Copilot (Tab)' : 'Copilot Off'}</span>
-          </button>
-
-          <button
-            type="button"
-            className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium border border-sky-500/30 bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 cursor-pointer transition-all"
-            onClick={() => openInlineCommand('', null)}
-            title="Open AI Inline Command Palette (Cmd+K)"
-          >
-            <Sparkles size={11} className="text-sky-600" />
-            <span>⌘K AI Edit</span>
-          </button>
-          <span className="text-[11px] text-text-muted px-1.5 py-0.5 rounded bg-black/5 font-mono select-none hidden sm:inline-block">⌘↵ compile</span>
-        </div>
       </div>
 
-      {/* Editor Canvas or Binary Image Preview or Diff Editor */}
-      {activeFile?.isBinary ? (
+      {/* Tab Context Menu */}
+      {tabContextMenu && (
+        <div
+          className="fixed z-50 bg-card border border-border-light shadow-xl rounded-md py-1 min-w-[150px] text-xs backdrop-blur-md"
+          style={{ top: tabContextMenu.y, left: tabContextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="w-full text-left px-3 py-1.5 hover:bg-card-hover flex items-center justify-between text-text-primary cursor-pointer border-0 bg-transparent"
+            onClick={() => {
+              closeTab(tabContextMenu.tabPath);
+              setTabContextMenu(null);
+            }}
+          >
+            <span>Close</span>
+            <span className="text-[10px] text-text-muted font-mono">⌘W</span>
+          </button>
+          <button
+            type="button"
+            className="w-full text-left px-3 py-1.5 hover:bg-card-hover text-text-primary cursor-pointer border-0 bg-transparent"
+            onClick={() => {
+              closeOtherTabs(tabContextMenu.tabPath);
+              setTabContextMenu(null);
+            }}
+          >
+            Close Others
+          </button>
+          {openTabs.indexOf(tabContextMenu.tabPath) < openTabs.length - 1 && (
+            <button
+              type="button"
+              className="w-full text-left px-3 py-1.5 hover:bg-card-hover text-text-primary cursor-pointer border-0 bg-transparent"
+              onClick={() => {
+                const idx = openTabs.indexOf(tabContextMenu.tabPath);
+                openTabs.slice(idx + 1).forEach((t) => closeTab(t));
+                setTabContextMenu(null);
+              }}
+            >
+              Close to the Right
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Editor Canvas or Binary Image Preview or Diff Editor or Empty state */}
+      {!activeFile ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-editor text-center select-none">
+          <div className="w-12 h-12 rounded-xl bg-app border border-border-subtle flex items-center justify-center text-text-muted mb-3 shadow-xs">
+            <FileText size={22} />
+          </div>
+          <h3 className="text-sm font-semibold text-text-primary mb-1">No File Open</h3>
+          <p className="text-xs text-text-muted mb-4 max-w-xs">
+            Open a file from the Project Explorer or reopen the root document.
+          </p>
+          <button
+            type="button"
+            className="bg-brand hover:bg-brand-hover text-white text-xs px-3.5 py-1.5 rounded font-medium cursor-pointer shadow-xs transition-all flex items-center gap-1.5"
+            onClick={() => setActiveFile('main.tex')}
+          >
+            <FileText size={13} />
+            <span>Open main.tex</span>
+          </button>
+        </div>
+      ) : activeFile?.isBinary ? (
         <div className="flex-1 flex flex-col items-center justify-center p-6 bg-editor">
           <div className="flex items-center gap-2 text-xs font-medium text-text-secondary mb-4">
             <ImageIcon size={14} className="text-emerald-600" />
@@ -625,7 +688,7 @@ export const MonacoLatexEditor: React.FC = () => {
               glyphMargin: false,
               folding: false,
               lineDecorationsWidth: 4,
-              minimap: { enabled: true, scale: 0.8 },
+              minimap: { enabled: false },
               scrollBeyondLastLine: false,
               wordWrap: 'on',
               automaticLayout: true,
@@ -735,7 +798,7 @@ export const MonacoLatexEditor: React.FC = () => {
               fontFamily: "'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', monospace",
               fontLigatures: true,
               lineHeight: 19,
-              minimap: { enabled: true, scale: 0.8 },
+              minimap: { enabled: false },
               scrollBeyondLastLine: false,
               wordWrap: 'on',
               automaticLayout: true,

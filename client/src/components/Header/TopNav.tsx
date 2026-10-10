@@ -3,9 +3,6 @@ import { useProjectStore } from '../../store/useProjectStore';
 import { useLayoutStore } from '../../store/useLayoutStore';
 import {
   Play,
-  Download,
-  FileArchive,
-  Layers,
   Terminal,
   Cpu,
   CheckCircle2,
@@ -32,10 +29,6 @@ export const TopNav: React.FC = () => {
     setAutoCompile,
     toggleLogsDrawer,
     logsDrawerOpen,
-    setTemplateModalOpen,
-    exportZip,
-    downloadPdf,
-    pdfUrl,
   } = useProjectStore();
 
   const {
@@ -218,37 +211,6 @@ export const TopNav: React.FC = () => {
             <RotateCcw size={12} />
           </button>
         </div>
-
-        {/* Template Gallery Trigger */}
-        <button
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border border-border-subtle bg-card hover:bg-card-hover text-text-secondary hover:text-text-primary transition-all duration-150 cursor-pointer"
-          onClick={() => setTemplateModalOpen(true)}
-          title="Browse starter LaTeX templates"
-        >
-          <Layers size={14} />
-          <span>Templates</span>
-        </button>
-
-        {/* Download PDF button */}
-        <button
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-brand hover:bg-brand-hover text-white shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          onClick={downloadPdf}
-          disabled={!pdfUrl}
-          title="Download Compiled PDF"
-        >
-          <Download size={14} />
-          <span>PDF</span>
-        </button>
-
-        {/* Export ZIP */}
-        <button
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border border-border-subtle bg-card hover:bg-card-hover text-text-secondary hover:text-text-primary transition-all duration-150 cursor-pointer"
-          onClick={exportZip}
-          title="Download Project as ZIP Archive"
-        >
-          <FileArchive size={14} />
-          <span>ZIP</span>
-        </button>
       </div>
     </header>
   );

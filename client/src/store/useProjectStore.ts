@@ -116,13 +116,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   closeTab: (path) => {
     set((state) => {
-      if (state.openTabs.length <= 1) return state;
       const nextTabs = state.openTabs.filter((t) => t !== path);
-      let nextActive = state.activeFilePath;
+      let nextActive = '';
       if (state.activeFilePath === path) {
-        const idx = state.openTabs.indexOf(path);
-        const newIdx = Math.max(0, idx - 1);
-        nextActive = nextTabs[newIdx] || nextTabs[0] || 'main.tex';
+        if (nextTabs.length > 0) {
+          const idx = state.openTabs.indexOf(path);
+          const newIdx = Math.max(0, idx - 1);
+          nextActive = nextTabs[newIdx] || nextTabs[0];
+        }
+      } else {
+        nextActive = state.activeFilePath;
       }
       return { openTabs: nextTabs, activeFilePath: nextActive };
     });
