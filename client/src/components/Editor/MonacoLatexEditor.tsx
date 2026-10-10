@@ -122,6 +122,34 @@ export const MonacoLatexEditor: React.FC = () => {
     editorRef.current = editor;
     monacoRef.current = monaco;
 
+    // Register ElseWhere warm paper theme matching #F5F0E7 palette
+    monaco.editor.defineTheme('elsewhere-warm', {
+      base: 'vs',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '8a8073', fontStyle: 'italic' },
+        { token: 'keyword', foreground: '008f5d', fontStyle: 'bold' },
+        { token: 'string', foreground: 'b45309' },
+        { token: 'number', foreground: '0284c7' },
+        { token: 'delimiter', foreground: '5c554b' },
+      ],
+      colors: {
+        'editor.background': '#FAF7F2',
+        'editor.foreground': '#1f1c18',
+        'editorCursor.foreground': '#1f1c18',
+        'editorLineNumber.foreground': '#a89f92',
+        'editorLineNumber.activeForeground': '#1f1c18',
+        'editor.selectionBackground': '#e8dfd1',
+        'editor.lineHighlightBackground': '#f4eee4',
+        'editorGutter.background': '#FAF7F2',
+        'diffEditor.insertedTextBackground': '#008f5d22',
+        'diffEditor.removedTextBackground': '#e11d4822',
+        'diffEditor.insertedLineBackground': '#008f5d12',
+        'diffEditor.removedLineBackground': '#e11d4812',
+      },
+    });
+    monaco.editor.setTheme('elsewhere-warm');
+
     // Register LaTeX snippets & autocompletions
     monaco.languages.registerCompletionItemProvider('latex', {
       provideCompletionItems: (model: any, position: any) => {
@@ -554,7 +582,7 @@ export const MonacoLatexEditor: React.FC = () => {
           <DiffEditor
             height="100%"
             language={language}
-            theme="vs-dark"
+            theme="elsewhere-warm"
             original={pendingEdit.originalContent}
             modified={pendingEdit.newContent}
             onMount={(diffEditor) => {
@@ -672,7 +700,7 @@ export const MonacoLatexEditor: React.FC = () => {
           <Editor
             height="100%"
             language={language}
-            theme="vs-dark"
+            theme="elsewhere-warm"
             value={activeFile?.content || ''}
             onChange={handleContentChange}
             onMount={handleEditorDidMount}
