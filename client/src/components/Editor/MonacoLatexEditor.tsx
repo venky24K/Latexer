@@ -3,12 +3,15 @@ import Editor, { type Monaco, type OnMount } from '@monaco-editor/react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAiStore } from '../../store/useAiStore';
 import { InlineCommandPalette } from '../AI/InlineCommandPalette';
-import { FileText, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { FileText, Image as ImageIcon, Sparkles, X, FileCode, BookOpen } from 'lucide-react';
 
 export const MonacoLatexEditor: React.FC = () => {
   const {
     files,
     activeFilePath,
+    openTabs,
+    setActiveFile,
+    closeTab,
     updateFileContent,
     errors,
     warnings,
@@ -260,6 +263,32 @@ export const MonacoLatexEditor: React.FC = () => {
     monaco.editor.setModelMarkers(model, 'latexer-diagnostics', markers);
   }, [errors, warnings, activeFilePath]);
 
+  // Tab keyboard shortcuts (⌘W to close tab, ⌘1-⌘9 to switch tab)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMeta = e.metaKey || e.ctrlKey;
+      if (!isMeta) return;
+
+      // ⌘W / Ctrl+W -> Close active tab
+      if (e.key.toLowerCase() === 'w' && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        closeTab(activeFilePath);
+      }
+
+      // ⌘1 - ⌘9 -> Switch to tab index
+      if (!e.shiftKey && !e.altKey && e.key >= '1' && e.key <= '9') {
+        const idx = parseInt(e.key, 10) - 1;
+        if (openTabs[idx]) {
+          e.preventDefault();
+          setActiveFile(openTabs[idx]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [closeTab, activeFilePath, openTabs, setActiveFile]);
+
   if (!activeFile) {
     return (
       <div className="editor-empty-state">
@@ -269,78 +298,127 @@ export const MonacoLatexEditor: React.FC = () => {
     );
   }
 
-  // Handle binary image preview
-  if (activeFile.isBinary) {
-    return (
-      <div className="binary-preview-container">
-        <div className="binary-header">
-          <ImageIcon size={16} />
-          <span>{activeFile.path} (Image Asset)</span>
-        </div>
-        <div className="binary-body">
-          <img
-            src={`data:image/png;base64,${activeFile.content}`}
-            alt={activeFile.path}
-            className="binary-image"
-          />
-        </div>
-      </div>
-    );
-  }
+  const getTabIcon = (path: string) => {
+    if (/\.(png|jpe?g|gif|webp|svg|eps)$/i.test(path) || files[path]?.isBinary) {
+      return <ImageIcon size={12} className="tab-icon text-green" />;
+    }
+    if (path.endsWith('.tex')) {
+      return <FileText size={12} className="tab-icon text-blue" />;
+    }
+    if (path.endsWith('.bib')) {
+      return <BookOpen size={12} className="tab-icon text-amber" />;
+    }
+    if (path.endsWith('.cls') || path.endsWith('.sty')) {
+      return <FileCode size={12} className="tab-icon" />;
+    }
+    return <FileText size={12} className="tab-icon" />;
+  };
 
   const language = activeFilePath.endsWith('.bib') ? 'latex' : activeFilePath.endsWith('.json') ? 'json' : 'latex';
 
   return (
     <div className="editor-container">
+      {/* Multi-File Tab Pills Bar */}
       <div className="editor-tab-bar">
-        <div className="active-tab">
-          <FileText size={13} className="tab-icon" />
-          <span>{activeFilePath}</span>
+        <div className="editor-tabs-scroll" role="tablist">
+          {openTabs.map((tabPath) => {
+            const isActive = tabPath === activeFilePath;
+            return (
+              <div
+                key={tabPath}
+                role="tab"
+                aria-selected={isActive}
+                className={`editor-tab-pill ${isActive ? 'active' : ''}`}
+                onClick={() => setActiveFile(tabPath)}
+                onAuxClick={(e) => {
+                  if (e.button === 1) {
+                    e.preventDefault();
+                    closeTab(tabPath);
+                  }
+                }}
+                title={tabPath}
+              >
+                {getTabIcon(tabPath)}
+                <span className="tab-label">{tabPath}</span>
+                {openTabs.length > 1 && (
+                  <button
+                    type="button"
+                    className="tab-close-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeTab(tabPath);
+                    }}
+                    title="Close tab (⌘W)"
+                  >
+                    <X size={11} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
+
         <div className="editor-actions-hint">
           <button
             type="button"
             className="ai-hint-badge"
             onClick={() => openInlineCommand('', null)}
-            title="Open Gemini AI Inline Command Palette (Cmd+K)"
+            title="Open AI Inline Command Palette (Cmd+K)"
           >
             <Sparkles size={11} className="text-blue" />
             <span>⌘K AI Edit</span>
           </button>
-          <span className="compile-hint-badge">⌘↵ to compile</span>
+          <span className="compile-hint-badge">⌘↵ compile</span>
         </div>
       </div>
 
-      <div className="editor-wrapper">
-        <InlineCommandPalette />
-        <Editor
-          height="100%"
-          language={language}
-          theme="vs-dark"
-          value={activeFile.content}
-          onChange={handleContentChange}
-          onMount={handleEditorDidMount}
-          options={{
-            fontSize: 13.5,
-            fontFamily: "'Fira Code', 'JetBrains Mono', 'Menlo', 'Monaco', monospace",
-            fontLigatures: true,
-            lineHeight: 22,
-            minimap: { enabled: true, scale: 0.8 },
-            scrollBeyondLastLine: false,
-            wordWrap: 'on',
-            automaticLayout: true,
-            tabSize: 2,
-            insertSpaces: true,
-            suggestOnTriggerCharacters: true,
-            bracketPairColorization: { enabled: true },
-            lineNumbers: 'on',
-            renderWhitespace: 'selection',
-            smoothScrolling: true,
-            cursorBlinking: 'smooth',
-            cursorSmoothCaretAnimation: 'on',
-          }}
-        />
-      </div>
+      {/* Editor Canvas or Binary Image Preview */}
+      {activeFile?.isBinary ? (
+        <div className="binary-preview-container">
+          <div className="binary-header">
+            <ImageIcon size={14} className="text-green" />
+            <span>{activeFile.path} (Image Preview)</span>
+          </div>
+          <div className="binary-body">
+            <img
+              src={`data:image/png;base64,${activeFile.content}`}
+              alt={activeFile.path}
+              className="binary-image"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="editor-wrapper">
+          <InlineCommandPalette />
+          <Editor
+            height="100%"
+            language={language}
+            theme="vs-dark"
+            value={activeFile?.content || ''}
+            onChange={handleContentChange}
+            onMount={handleEditorDidMount}
+            options={{
+              fontSize: 13.5,
+              fontFamily: "'Fira Code', 'JetBrains Mono', 'Menlo', 'Monaco', monospace",
+              fontLigatures: true,
+              lineHeight: 22,
+              minimap: { enabled: true, scale: 0.8 },
+              scrollBeyondLastLine: false,
+              wordWrap: 'on',
+              automaticLayout: true,
+              tabSize: 2,
+              insertSpaces: true,
+              suggestOnTriggerCharacters: true,
+              bracketPairColorization: { enabled: true },
+              lineNumbers: 'on',
+              renderWhitespace: 'selection',
+              smoothScrolling: true,
+              cursorBlinking: 'smooth',
+              cursorSmoothCaretAnimation: 'on',
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

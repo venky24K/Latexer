@@ -9,6 +9,8 @@ interface ProjectState {
   projectName: string;
   files: Record<string, VirtualFile>;
   activeFilePath: string;
+  openTabs: string[];
+  folders: string[];
   
   // Compilation
   compilationState: CompilationState;
@@ -34,6 +36,11 @@ interface ProjectState {
   // Actions
   setProjectName: (name: string) => void;
   setActiveFile: (path: string) => void;
+  openTab: (path: string) => void;
+  closeTab: (path: string) => void;
+  closeOtherTabs: (keepPath: string) => void;
+  createFolder: (folderPath: string) => void;
+  deleteFolder: (folderPath: string) => void;
   updateFileContent: (path: string, content: string) => void;
   createFile: (path: string, content?: string, isBinary?: boolean) => void;
   deleteFile: (path: string) => void;
@@ -69,6 +76,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   projectName: 'Academic Research Manuscript',
   files: getDefaultFiles(),
   activeFilePath: 'main.tex',
+  openTabs: ['main.tex'],
+  folders: [],
 
   compilationState: 'idle',
   pdfUrl: null,
@@ -91,8 +100,72 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   setActiveFile: (path) => {
     if (get().files[path]) {
-      set({ activeFilePath: path });
+      const openTabs = get().openTabs;
+      const nextTabs = openTabs.includes(path) ? openTabs : [...openTabs, path];
+      set({ activeFilePath: path, openTabs: nextTabs });
     }
+  },
+
+  openTab: (path) => {
+    if (get().files[path]) {
+      const openTabs = get().openTabs;
+      const nextTabs = openTabs.includes(path) ? openTabs : [...openTabs, path];
+      set({ activeFilePath: path, openTabs: nextTabs });
+    }
+  },
+
+  closeTab: (path) => {
+    set((state) => {
+      if (state.openTabs.length <= 1) return state;
+      const nextTabs = state.openTabs.filter((t) => t !== path);
+      let nextActive = state.activeFilePath;
+      if (state.activeFilePath === path) {
+        const idx = state.openTabs.indexOf(path);
+        const newIdx = Math.max(0, idx - 1);
+        nextActive = nextTabs[newIdx] || nextTabs[0] || 'main.tex';
+      }
+      return { openTabs: nextTabs, activeFilePath: nextActive };
+    });
+  },
+
+  closeOtherTabs: (keepPath) => {
+    set({
+      openTabs: [keepPath],
+      activeFilePath: keepPath,
+    });
+  },
+
+  createFolder: (folderPath) => {
+    const cleanFolder = folderPath.trim().replace(/^\/+|\/+$/g, '');
+    if (!cleanFolder) return;
+    set((state) => {
+      if (state.folders.includes(cleanFolder)) return state;
+      return { folders: [...state.folders, cleanFolder] };
+    });
+  },
+
+  deleteFolder: (folderPath) => {
+    set((state) => {
+      const prefix = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+      const updatedFiles = { ...state.files };
+      Object.keys(updatedFiles).forEach((p) => {
+        if (p.startsWith(prefix) && p !== 'main.tex') {
+          delete updatedFiles[p];
+        }
+      });
+      const updatedFolders = state.folders.filter((f) => f !== folderPath && !f.startsWith(prefix));
+      const nextTabs = state.openTabs.filter((t) => !t.startsWith(prefix));
+      let nextActive = state.activeFilePath;
+      if (nextActive.startsWith(prefix)) {
+        nextActive = nextTabs[0] || 'main.tex';
+      }
+      return {
+        files: updatedFiles,
+        folders: updatedFolders,
+        openTabs: nextTabs.length > 0 ? nextTabs : ['main.tex'],
+        activeFilePath: nextActive,
+      };
+    });
   },
 
   updateFileContent: (path, content) => {
@@ -109,6 +182,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           projectName: state.projectName,
           files: updatedFiles,
           activeFilePath: state.activeFilePath,
+          openTabs: state.openTabs,
+          folders: state.folders,
         }));
       } catch {
         // local storage quota or private browsing
@@ -124,7 +199,21 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         ...state.files,
         [path]: { path, content, isBinary },
       };
-      return { files: updatedFiles, activeFilePath: path };
+      const parts = path.split('/');
+      let updatedFolders = state.folders;
+      if (parts.length > 1) {
+        const folder = parts.slice(0, -1).join('/');
+        if (!updatedFolders.includes(folder)) {
+          updatedFolders = [...updatedFolders, folder];
+        }
+      }
+      const nextTabs = state.openTabs.includes(path) ? state.openTabs : [...state.openTabs, path];
+      return {
+        files: updatedFiles,
+        activeFilePath: path,
+        openTabs: nextTabs,
+        folders: updatedFolders,
+      };
     });
   },
 
@@ -136,8 +225,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       }
       const updated = { ...state.files };
       delete updated[path];
-      const nextActive = state.activeFilePath === path ? 'main.tex' : state.activeFilePath;
-      return { files: updated, activeFilePath: nextActive };
+      const nextTabs = state.openTabs.filter((t) => t !== path);
+      let nextActive = state.activeFilePath;
+      if (state.activeFilePath === path) {
+        nextActive = nextTabs.length > 0 ? nextTabs[nextTabs.length - 1] : 'main.tex';
+      }
+      return {
+        files: updated,
+        openTabs: nextTabs.length > 0 ? nextTabs : ['main.tex'],
+        activeFilePath: nextActive,
+      };
     });
   },
 
@@ -153,8 +250,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const updated = { ...state.files };
       delete updated[oldPath];
       updated[newPath] = { ...current, path: newPath };
+      const nextTabs = state.openTabs.map((t) => (t === oldPath ? newPath : t));
       return {
         files: updated,
+        openTabs: nextTabs,
         activeFilePath: state.activeFilePath === oldPath ? newPath : state.activeFilePath,
       };
     });
@@ -313,10 +412,14 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.files && Object.keys(parsed.files).length > 0) {
+          const activeFile = parsed.activeFilePath || 'main.tex';
+          const tabs = Array.isArray(parsed.openTabs) && parsed.openTabs.length > 0 ? parsed.openTabs : [activeFile];
           set({
             projectName: parsed.projectName || 'My LaTeX Project',
             files: parsed.files,
-            activeFilePath: parsed.activeFilePath || 'main.tex',
+            activeFilePath: activeFile,
+            openTabs: tabs.includes(activeFile) ? tabs : [...tabs, activeFile],
+            folders: Array.isArray(parsed.folders) ? parsed.folders : [],
           });
         }
       }
