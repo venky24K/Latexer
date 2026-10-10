@@ -180,7 +180,7 @@ flowchart TB
   - [x] Multi-turn conversational history maintaining author-copilot dialogue.
   - [x] Interactive LaTeX code cards with syntax badges, copy button, and 1-click Monaco cursor insertion (`insertAtCursor`).
   - [x] 4 one-click starter quick action chips (*Polish Academic Tone*, *Add Math Equation*, *Create Table*, *Fix LaTeX Errors*).
-  - [ ] **Rich Markdown Message Renderer**: Render bold, italics, bullet lists, numbered lists, headings, and inline math/code instead of raw markdown characters.
+  - [x] **Rich Markdown Message Renderer**: Render bold, italics, bullet lists, numbered lists, headings, and inline math/code instead of raw markdown characters.
   - [ ] **Auto-Resizing Composer Textarea**: Dynamic height expansion up to 160px with `Enter` (send) and `Shift + Enter` (newline) handling.
   - [ ] **Dynamic Provider Placeholders & Sender Metadata**: Contextual placeholders matching active engine and immutable provider branding on message bubbles.
   - [ ] **Document Context & Selection Toggle**: Toggle switch for `[x] Include Document Context` and active selection line-count badge.
@@ -239,11 +239,11 @@ flowchart TB
   - Automatic extraction of baseline data to build comparative benchmark tables (`booktabs`).
   - Extract and format cited papers directly into clean BibTeX entries appended to `references.bib`.
 
-### 4.6 Ghost Text AI Inline Code Completions `[TODO]`
-- [ ] Monaco `InlineCompletionsProvider` delivering real-time gray phantom text as the author types.
-- [ ] Ultra-fast debounced generation (~150ms via Groq LPU fast inference).
-- [ ] Predicts equation completions, math symbols, `\item` enumerations, and academic sentence continuations.
-- [ ] Standard editor shortcuts: `Tab` to accept ghost text, `Esc` to dismiss, `Alt + ]` / `Alt + [` to cycle alternate proposals.
+### 4.6 Ghost Text AI Inline Code Completions `[COMPLETED]`
+- [x] Monaco `InlineCompletionsProvider` delivering real-time gray phantom text as the author types.
+- [x] Ultra-fast debounced generation (~150ms via Groq LPU fast inference / Google Gemini).
+- [x] Predicts equation completions, math symbols, `\item` enumerations, and academic sentence continuations.
+- [x] Standard editor shortcuts: `Tab` to accept ghost text, `Esc` to dismiss, `⌥\` / `Alt+\` to trigger. Copilot toggle badge in editor toolbar.
 
 ### 4.7 AI Writing Detection Analysis & Academic Humanizer Engine `[TODO]`
 - [ ] **AI Writing Detection Scanner**:

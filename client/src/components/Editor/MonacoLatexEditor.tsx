@@ -3,8 +3,9 @@ import Editor, { DiffEditor, type Monaco, type OnMount } from '@monaco-editor/re
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAiStore } from '../../store/useAiStore';
 import { useAgentStore } from '../../store/useAgentStore';
+import { sendAiInlineCompletionRequest } from '../../services/aiApi';
 import { InlineCommandPalette } from '../AI/InlineCommandPalette';
-import { FileText, Image as ImageIcon, Sparkles, X, FileCode, BookOpen, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Image as ImageIcon, Sparkles, X, FileCode, BookOpen, Check, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 
 export const MonacoLatexEditor: React.FC = () => {
   const {
@@ -21,12 +22,19 @@ export const MonacoLatexEditor: React.FC = () => {
     registerJumpToLine,
   } = useProjectStore();
 
-  const { openInlineCommand, registerEditorActions } = useAiStore();
+  const {
+    openInlineCommand,
+    registerEditorActions,
+    ghostTextEnabled,
+    toggleGhostText,
+    isGhostTextLoading,
+  } = useAiStore();
 
   const editorRef = useRef<any>(null);
   const diffEditorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const autoCompileTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const inlineProviderRef = useRef<any>(null);
 
   const pendingEdits = useAgentStore((state) => state.pendingEdits);
   const acceptEdit = useAgentStore((state) => state.acceptEdit);
@@ -98,6 +106,16 @@ export const MonacoLatexEditor: React.FC = () => {
       }, 1500);
     }
   };
+
+  // Dispose inline provider on component unmount
+  useEffect(() => {
+    return () => {
+      if (inlineProviderRef.current) {
+        inlineProviderRef.current.dispose();
+        inlineProviderRef.current = null;
+      }
+    };
+  }, []);
 
   // Setup Monaco on mount
   const handleEditorDidMount: OnMount = (editor, monaco) => {
@@ -237,6 +255,78 @@ export const MonacoLatexEditor: React.FC = () => {
         selectedText = model.getValueInRange(selection);
       }
       openInlineCommand(selectedText, selection);
+    });
+
+    // Keybinding: Option+\ / Alt+\ -> Trigger Copilot Inline Autocompletion
+    editor.addCommand(monaco.KeyMod.Alt | monaco.KeyCode.Backslash, () => {
+      editor.trigger('copilot', 'editor.action.inlineSuggest.trigger', {});
+    });
+
+    // Register Monaco Inline Completions Provider (Copilot Ghost Text)
+    if (inlineProviderRef.current) {
+      inlineProviderRef.current.dispose();
+      inlineProviderRef.current = null;
+    }
+
+    inlineProviderRef.current = monaco.languages.registerInlineCompletionsProvider('latex', {
+      provideInlineCompletions: async (model: any, position: any, _context: any, token: any) => {
+        if (!useAiStore.getState().ghostTextEnabled) {
+          return { items: [] };
+        }
+
+        const fullText = model.getValue();
+        const offset = model.getOffsetAt(position);
+
+        const prefix = fullText.slice(Math.max(0, offset - 1500), offset);
+        const suffix = fullText.slice(offset, Math.min(fullText.length, offset + 800));
+
+        if (!prefix.trim()) {
+          return { items: [] };
+        }
+
+        // Debounce 250ms
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        if (token.isCancellationRequested) {
+          return { items: [] };
+        }
+
+        try {
+          useAiStore.getState().setGhostTextLoading(true);
+          const { provider, groqKey, geminiKey, selectedModel } = useAiStore.getState();
+          const apiKey = provider === 'gemini' ? geminiKey : groqKey;
+
+          const completion = await sendAiInlineCompletionRequest({
+            prefix,
+            suffix,
+            provider,
+            apiKey,
+            model: selectedModel,
+          });
+
+          if (token.isCancellationRequested || !completion || !completion.trim()) {
+            return { items: [] };
+          }
+
+          return {
+            items: [
+              {
+                insertText: completion,
+                range: new monaco.Range(
+                  position.lineNumber,
+                  position.column,
+                  position.lineNumber,
+                  position.column
+                ),
+              },
+            ],
+          };
+        } catch (err) {
+          return { items: [] };
+        } finally {
+          useAiStore.getState().setGhostTextLoading(false);
+        }
+      },
+      freeInlineCompletions: () => {},
     });
 
     // Register editor actions for AI insertions
@@ -423,6 +513,16 @@ export const MonacoLatexEditor: React.FC = () => {
         <div className="editor-actions-hint">
           <button
             type="button"
+            className={`copilot-toggle-badge ${ghostTextEnabled ? 'active' : ''}`}
+            onClick={() => toggleGhostText()}
+            title={`Copilot Ghost Text: ${ghostTextEnabled ? 'Active (Tab to accept, ⌥\\ to trigger)' : 'Disabled'}. Click to toggle.`}
+          >
+            <Zap size={11} className={ghostTextEnabled ? 'text-amber' : 'text-muted'} />
+            <span>{isGhostTextLoading ? 'Thinking...' : ghostTextEnabled ? 'Copilot (Tab)' : 'Copilot Off'}</span>
+          </button>
+
+          <button
+            type="button"
             className="ai-hint-badge"
             onClick={() => openInlineCommand('', null)}
             title="Open AI Inline Command Palette (Cmd+K)"
@@ -594,6 +694,12 @@ export const MonacoLatexEditor: React.FC = () => {
               smoothScrolling: true,
               cursorBlinking: 'smooth',
               cursorSmoothCaretAnimation: 'on',
+              inlineSuggest: {
+                enabled: true,
+                mode: 'subwordSmart',
+                showToolbar: 'onHover',
+                suppressSuggestions: false,
+              },
             }}
           />
         </div>

@@ -954,6 +954,21 @@ body, html, #root {
   color: #38bdf8; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-family: var(--font-sans); cursor: pointer; transition: all 0.15s ease;
 }
 .ai-hint-badge:hover { background: rgba(56, 189, 248, 0.22); border-color: #38bdf8; color: #ffffff; }
+.copilot-toggle-badge {
+  display: flex; align-items: center; gap: 5px; background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border-subtle); color: var(--color-text-secondary);
+  padding: 2px 7px; border-radius: 4px; font-size: 11px; font-family: var(--font-sans);
+  cursor: pointer; transition: all 0.15s ease;
+}
+.copilot-toggle-badge:hover {
+  background: rgba(255, 255, 255, 0.1); color: var(--color-text-primary); border-color: var(--color-border-light);
+}
+.copilot-toggle-badge.active {
+  background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.35); color: #fbbf24;
+}
+.copilot-toggle-badge.active:hover {
+  background: rgba(245, 158, 11, 0.22); border-color: rgba(245, 158, 11, 0.5); color: #fde68a;
+}
 .compile-hint-badge { font-size: 11px; color: var(--color-text-muted); font-family: var(--font-mono); }
 .editor-wrapper { flex: 1; position: relative; overflow: hidden; }
 

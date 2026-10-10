@@ -38,7 +38,13 @@ interface AiState {
   insertAtCursorFn: ((text: string) => void) | null;
   replaceSelectionFn: ((replacement: string, range?: any) => void) | null;
 
+  // Ghost Text / Inline Autocompletions (Tab to accept)
+  ghostTextEnabled: boolean;
+  isGhostTextLoading: boolean;
+
   // Actions
+  toggleGhostText: (enabled?: boolean) => void;
+  setGhostTextLoading: (loading: boolean) => void;
   setProvider: (provider: AiProvider) => void;
   setGroqKey: (key: string) => void;
   setGeminiKey: (key: string) => void;
@@ -63,6 +69,7 @@ const LOCAL_GROQ_KEY = 'latexer_groq_api_key';
 const LOCAL_GEMINI_KEY = 'latexer_gemini_api_key';
 const LOCAL_MODEL_KEY = 'latexer_ai_model';
 const LOCAL_PROVIDER_KEY = 'latexer_ai_provider';
+const LOCAL_GHOST_TEXT_KEY = 'latexer_ghost_text_enabled';
 
 const DEFAULT_GROQ_KEY = '';
 const DEFAULT_MODEL = 'openai/gpt-oss-120b';
@@ -103,6 +110,11 @@ export const useAiStore = create<AiState>((set, get) => ({
   aiSidebarOpen: true,
   settingsModalOpen: false,
 
+  ghostTextEnabled: typeof window !== 'undefined'
+    ? localStorage.getItem(LOCAL_GHOST_TEXT_KEY) !== 'false'
+    : true,
+  isGhostTextLoading: false,
+
   chatMessages: [
     {
       id: 'welcome',
@@ -128,6 +140,16 @@ How can I assist your manuscript today?`,
 
   insertAtCursorFn: null,
   replaceSelectionFn: null,
+
+  toggleGhostText: (enabled) => {
+    set((state) => {
+      const next = enabled !== undefined ? enabled : !state.ghostTextEnabled;
+      localStorage.setItem(LOCAL_GHOST_TEXT_KEY, String(next));
+      return { ghostTextEnabled: next };
+    });
+  },
+
+  setGhostTextLoading: (loading) => set({ isGhostTextLoading: loading }),
 
   setProvider: (provider) => {
     localStorage.setItem(LOCAL_PROVIDER_KEY, provider);

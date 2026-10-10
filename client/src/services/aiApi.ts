@@ -73,6 +73,31 @@ export async function sendAiInlineEditRequest(params: {
   return data.replacement;
 }
 
+export async function sendAiInlineCompletionRequest(params: {
+  prefix: string;
+  suffix?: string;
+  model?: string;
+  apiKey?: string;
+  provider?: 'groq' | 'gemini';
+  signal?: AbortSignal;
+}): Promise<string> {
+  const { signal, ...body } = params;
+  const res = await fetch('/api/ai/inline-completion', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(errorData.error || 'AI Inline Completion failed');
+  }
+
+  const data = await res.json();
+  return data.completion || '';
+}
+
 export interface AgentApiMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content?: string | null;

@@ -35,6 +35,14 @@ export interface AiInlineParams {
   surroundingContext?: string;
 }
 
+export interface AiCompletionParams {
+  provider?: 'groq' | 'gemini';
+  apiKey?: string;
+  model?: string;
+  prefix: string;
+  suffix?: string;
+}
+
 // Helper to determine AI provider based on model or keys
 export function resolveProvider(model?: string, explicitProvider?: 'groq' | 'gemini'): 'groq' | 'gemini' {
   if (explicitProvider) return explicitProvider;
@@ -270,6 +278,101 @@ export async function dispatchAiInlineEdit(params: AiInlineParams): Promise<stri
     return inlineEditWithGroq(params);
   }
   return inlineEditWithGemini(params);
+}
+
+// ================= Inline Ghost Text Autocompletion =================
+async function completeWithGroq(params: AiCompletionParams): Promise<string> {
+  const key = params.apiKey || process.env.GROQ_API_KEY;
+  if (!key) {
+    throw new Error('Groq API key is required.');
+  }
+
+  let model = params.model && !params.model.startsWith('gemini-') ? params.model : 'openai/gpt-oss-120b';
+  if (model.includes('llama')) {
+    model = 'openai/gpt-oss-120b';
+  }
+
+  const prompt = `<PREFIX>${params.prefix.slice(-2000)}<CURSOR>${(params.suffix || '').slice(0, 1000)}<SUFFIX>
+Complete the code at <CURSOR>. Provide ONLY the raw text that should be inserted directly at <CURSOR> to complete the thought or LaTeX syntax. Do NOT repeat any part of <PREFIX> or <SUFFIX>. Do NOT wrap in markdown code blocks or quotes. If no continuation is needed, return nothing.`;
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an ultra-fast inline code completion engine for a LaTeX editor. Output ONLY the raw continuation text at the cursor. No conversational text, no markdown fences.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.1,
+      max_tokens: 120,
+      stop: ['<SUFFIX>', '\n\n\n'],
+    }),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ error: { message: res.statusText } }));
+    throw new Error(errBody.error?.message || `Groq API returned ${res.status}`);
+  }
+
+  const data = await res.json();
+  let text = data.choices?.[0]?.message?.content || '';
+
+  if (text.startsWith('```latex')) {
+    text = text.replace(/^```latex\s*/, '').replace(/\s*```$/, '');
+  } else if (text.startsWith('```')) {
+    text = text.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
+
+  return text;
+}
+
+export async function completeWithGemini(params: AiCompletionParams): Promise<string> {
+  const key = params.apiKey || process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error('Gemini API key is required.');
+  }
+
+  const genAI = new GoogleGenerativeAI(key);
+  const modelName = normalizeGeminiModel(params.model);
+
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+    systemInstruction: 'You are an ultra-fast inline code completion engine for a LaTeX editor. Output ONLY the raw continuation text at the cursor. No conversational text, no markdown fences.',
+    generationConfig: {
+      temperature: 0.1,
+      maxOutputTokens: 120,
+      stopSequences: ['<SUFFIX>', '\n\n\n'],
+    },
+  });
+
+  const prompt = `<PREFIX>${params.prefix.slice(-2000)}<CURSOR>${(params.suffix || '').slice(0, 1000)}<SUFFIX>
+Complete the code at <CURSOR>. Provide ONLY the raw text that should be inserted directly at <CURSOR>. Do NOT repeat prefix or suffix. Do NOT wrap in markdown fences. If nothing is needed, return empty string.`;
+
+  const result = await model.generateContent(prompt);
+  let text = result.response.text() || '';
+
+  if (text.startsWith('```latex')) {
+    text = text.replace(/^```latex\s*/, '').replace(/\s*```$/, '');
+  } else if (text.startsWith('```')) {
+    text = text.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
+
+  return text;
+}
+
+export async function dispatchAiInlineCompletion(params: AiCompletionParams): Promise<string> {
+  const provider = resolveProvider(params.model, params.provider);
+  if (provider === 'gemini') {
+    return completeWithGemini(params);
+  }
+  return completeWithGroq(params);
 }
 
 // ================= Agent Mode & Tool Calling Types & Dispatchers =================

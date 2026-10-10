@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { compileWorkspace, detectEngines, pdfCache } from './compiler.js';
 import { CompileRequest } from './types.js';
-import { dispatchAiChat, dispatchAiInlineEdit, dispatchAiAgentStep } from './aiService.js';
+import { dispatchAiChat, dispatchAiInlineEdit, dispatchAiAgentStep, dispatchAiInlineCompletion } from './aiService.js';
 
 // Load .env automatically if present
 try {
@@ -126,6 +126,28 @@ app.post('/api/ai/inline-edit', async (req, res) => {
   } catch (err: any) {
     console.error('AI Inline Edit Error:', err);
     res.status(500).json({ error: err.message || 'AI inline edit failed' });
+  }
+});
+
+app.post('/api/ai/inline-completion', async (req, res) => {
+  try {
+    const { prefix, suffix, model, apiKey, provider } = req.body;
+    if (typeof prefix !== 'string') {
+      return res.status(400).json({ error: 'Prefix is required' });
+    }
+
+    const completion = await dispatchAiInlineCompletion({
+      provider,
+      apiKey,
+      model,
+      prefix,
+      suffix,
+    });
+
+    res.json({ completion });
+  } catch (err: any) {
+    console.error('AI Inline Completion Error:', err);
+    res.status(500).json({ error: err.message || 'AI inline completion failed' });
   }
 });
 
