@@ -1,25 +1,26 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #008f5d;
-  --color-brand-hover: #007a4f;
-  --color-app: #F5F0E7;
-  --color-sidebar: #EDE8DF;
-  --color-editor: #FAF7F2;
-  --color-preview: #E6E0D5;
-  --color-toolbar: #FAF7F2;
-  --color-card: #FDFCFA;
-  --color-card-hover: #F2ECE1;
-  --color-border-subtle: #E2DBD0;
-  --color-border-light: #D4CCC0;
-  --color-text-primary: #1f1c18;
-  --color-text-secondary: #5c554b;
-  --color-text-muted: #8a8073;
-  --color-accent-blue: #0284c7;
-  --color-accent-amber: #b45309;
-  --color-accent-red: #be123c;
-  --color-accent-green: #008f5d;
-  --color-accent-purple: #6d28d9;
+  --color-brand: #6055E8;
+  --color-brand-hover: #4F43D6;
+  --color-app: #F6F7FB;
+  --color-sidebar: #FFFFFF;
+  --color-editor: #FFFFFF;
+  --color-preview: #F1F3F9;
+  --color-toolbar: #FFFFFF;
+  --color-card: #FFFFFF;
+  --color-card-hover: #F8F9FE;
+  --color-border-subtle: #EAEBF5;
+  --color-border-light: #E2E4F0;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4B5563;
+  --color-text-muted: #94A3B8;
+  --color-accent-blue: #3b82f6;
+  --color-accent-amber: #f59e0b;
+  --color-accent-red: #ef4444;
+  --color-accent-green: #10b981;
+  --color-accent-purple: #704BEA;
+  --color-accent-purple-light: #EDE9FE;
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', monospace;
@@ -31,25 +32,26 @@
 }
 
 :root {
-  --color-brand: #008f5d;
-  --color-brand-hover: #007a4f;
-  --color-app: #F5F0E7;
-  --color-sidebar: #EDE8DF;
-  --color-editor: #FAF7F2;
-  --color-preview: #E6E0D5;
-  --color-toolbar: #FAF7F2;
-  --color-card: #FDFCFA;
-  --color-card-hover: #F2ECE1;
-  --color-border-subtle: #E2DBD0;
-  --color-border-light: #D4CCC0;
-  --color-text-primary: #1f1c18;
-  --color-text-secondary: #5c554b;
-  --color-text-muted: #8a8073;
-  --color-accent-blue: #0284c7;
-  --color-accent-amber: #b45309;
-  --color-accent-red: #be123c;
-  --color-accent-green: #008f5d;
-  --color-accent-purple: #6d28d9;
+  --color-brand: #6055E8;
+  --color-brand-hover: #4F43D6;
+  --color-app: #F6F7FB;
+  --color-sidebar: #FFFFFF;
+  --color-editor: #FFFFFF;
+  --color-preview: #F1F3F9;
+  --color-toolbar: #FFFFFF;
+  --color-card: #FFFFFF;
+  --color-card-hover: #F8F9FE;
+  --color-border-subtle: #EAEBF5;
+  --color-border-light: #E2E4F0;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4B5563;
+  --color-text-muted: #94A3B8;
+  --color-accent-blue: #3b82f6;
+  --color-accent-amber: #f59e0b;
+  --color-accent-red: #ef4444;
+  --color-accent-green: #10b981;
+  --color-accent-purple: #704BEA;
+  --color-accent-purple-light: #EDE9FE;
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', monospace;
@@ -191,11 +193,11 @@ html, body, #root {
 .ai-markdown-content h3 { font-size: 13px; }
 
 .ai-markdown-content blockquote {
-  border-left: 3px solid var(--color-accent-blue);
+  border-left: 3px solid var(--color-accent-purple);
   padding-left: 10px;
   margin: 8px 0;
   font-style: italic;
-  background: rgba(2, 132, 199, 0.06);
+  background: #F3F0FE;
   border-radius: 0 4px 4px 0;
 }
 

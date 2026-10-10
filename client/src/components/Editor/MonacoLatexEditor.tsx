@@ -122,30 +122,30 @@ export const MonacoLatexEditor: React.FC = () => {
     editorRef.current = editor;
     monacoRef.current = monaco;
 
-    // Register ElseWhere warm paper theme matching #F5F0E7 palette
+    // Register ElseWhere theme matching violet/slate palette
     monaco.editor.defineTheme('elsewhere-warm', {
       base: 'vs',
       inherit: true,
       rules: [
-        { token: 'comment', foreground: '8a8073', fontStyle: 'italic' },
-        { token: 'keyword', foreground: '008f5d', fontStyle: 'bold' },
-        { token: 'string', foreground: 'b45309' },
-        { token: 'number', foreground: '0284c7' },
-        { token: 'delimiter', foreground: '5c554b' },
+        { token: 'comment', foreground: '94A3B8', fontStyle: 'italic' },
+        { token: 'keyword', foreground: '6055E8', fontStyle: 'bold' },
+        { token: 'string', foreground: '0284c7' },
+        { token: 'number', foreground: '704BEA' },
+        { token: 'delimiter', foreground: '4B5563' },
       ],
       colors: {
-        'editor.background': '#FAF7F2',
-        'editor.foreground': '#1f1c18',
-        'editorCursor.foreground': '#1f1c18',
-        'editorLineNumber.foreground': '#a89f92',
-        'editorLineNumber.activeForeground': '#1f1c18',
-        'editor.selectionBackground': '#e8dfd1',
-        'editor.lineHighlightBackground': '#f4eee4',
-        'editorGutter.background': '#FAF7F2',
-        'diffEditor.insertedTextBackground': '#008f5d22',
-        'diffEditor.removedTextBackground': '#e11d4822',
-        'diffEditor.insertedLineBackground': '#008f5d12',
-        'diffEditor.removedLineBackground': '#e11d4812',
+        'editor.background': '#FFFFFF',
+        'editor.foreground': '#111827',
+        'editorCursor.foreground': '#6055E8',
+        'editorLineNumber.foreground': '#CBD5E1',
+        'editorLineNumber.activeForeground': '#111827',
+        'editor.selectionBackground': '#EDE9FE',
+        'editor.lineHighlightBackground': '#F8F9FE',
+        'editorGutter.background': '#FFFFFF',
+        'diffEditor.insertedTextBackground': '#6055E822',
+        'diffEditor.removedTextBackground': '#ef444422',
+        'diffEditor.insertedLineBackground': '#6055E812',
+        'diffEditor.removedLineBackground': '#ef444412',
       },
     });
     monaco.editor.setTheme('elsewhere-warm');
