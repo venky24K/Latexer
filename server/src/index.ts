@@ -69,15 +69,15 @@ app.get('/api/ai/status', (req, res) => {
     configured: hasGroq || hasGemini,
     hasGroq,
     hasGemini,
-    defaultModel: hasGroq ? 'openai/gpt-oss-120b' : 'gemini-1.5-flash',
+    defaultModel: hasGroq ? 'openai/gpt-oss-120b' : 'gemini-3.6-flash',
     defaultProvider: hasGroq ? 'groq' : 'gemini',
     supportedModels: [
       { id: 'openai/gpt-oss-120b', name: 'OpenAI GPT-OSS 120B (Groq • Deep Reasoning & MoE)', provider: 'groq' },
       { id: 'qwen/qwen3.8-27b', name: 'Qwen 3.8 27B (Groq • High-Speed Multimodal & Tools)', provider: 'groq' },
       { id: 'openai/gpt-oss-20b', name: 'OpenAI GPT-OSS 20B (Groq • Fast Lightweight Execution)', provider: 'groq' },
-      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Google)', provider: 'gemini' },
-      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Google)', provider: 'gemini' },
-      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Google)', provider: 'gemini' },
+      { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash (Google • High-Speed Agentic & Production)', provider: 'gemini' },
+      { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Google • Fast Workhorse & Coding)', provider: 'gemini' },
+      { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (Google • Deep Reasoning & Complex Tasks)', provider: 'gemini' },
     ],
   });
 });

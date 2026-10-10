@@ -49,7 +49,7 @@ flowchart TB
         Tectonic["Tectonic (Cloudflare Package Auto-Fetch)"]
         TeXLive["TeXLive / MacTeX (latexmk, pdflatex, xelatex)"]
         GroqAPI["Groq LPU (GPT-OSS 120B / Qwen 27B / GPT-OSS 20B)"]
-        GeminiAPI["Google Gemini (2.0 Flash / 1.5 Pro / Thinking)"]
+        GeminiAPI["Google Gemini (3.8 Flash / 3.6 Flash / 3.1 Pro)"]
         arXivCrossRef["arXiv & CrossRef Literature APIs"]
     end
 
@@ -147,7 +147,7 @@ flowchart TB
 
 - [x] **Dual AI Engine Architecture (Groq LPU & Google Gemini)** (`aiService.ts`, `aiApi.ts`, `useAiStore.ts`):
   - **Groq LPU Ultra-Fast Acceleration**: Sub-300ms completion speeds (~250+ tokens/sec) for publication-grade grammar, academic writing, and LaTeX equations via **GPT-OSS 120B** (`openai/gpt-oss-120b`), **Qwen 3.8 27B** (`qwen/qwen3.8-27b`), and **GPT-OSS 20B** (`openai/gpt-oss-20b`).
-  - **Google Gemini Engine**: Native support for **Gemini 1.5 Flash**, **Gemini 1.5 Pro**, and **Gemini 2.0 Flash**.
+  - **Google Gemini Engine**: Native support for **Gemini 3.8 Flash**, **Gemini 3.6 Flash**, and **Gemini 3.1 Pro**.
   - Clean API key management: untracked `.env` backend keys with client override capability in `localStorage`.
 - [x] **VS Code-Style Activity Bar Rail** (`ActivityBar.tsx`):
   - 46px leftmost vertical navigation rail.

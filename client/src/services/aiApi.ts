@@ -86,6 +86,7 @@ export interface AgentApiMessage {
   }>;
   tool_call_id?: string;
   name?: string;
+  rawGeminiParts?: any[];
 }
 
 export interface AgentStepResponse {
@@ -101,6 +102,7 @@ export interface AgentStepResponse {
         arguments: string;
       };
     }>;
+    rawGeminiParts?: any[];
   };
 }
 

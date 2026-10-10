@@ -66,22 +66,25 @@ const LOCAL_PROVIDER_KEY = 'latexer_ai_provider';
 
 const DEFAULT_GROQ_KEY = '';
 const DEFAULT_MODEL = 'openai/gpt-oss-120b';
+const DEFAULT_GEMINI_MODEL = 'gemini-3.6-flash';
 
 const INITIAL_SUPPORTED_MODELS: SupportedModel[] = [
   { id: 'openai/gpt-oss-120b', name: 'OpenAI GPT-OSS 120B (Groq • Deep Reasoning & MoE)', provider: 'groq' },
   { id: 'qwen/qwen3.8-27b', name: 'Qwen 3.8 27B (Groq • High-Speed Multimodal & Tools)', provider: 'groq' },
   { id: 'openai/gpt-oss-20b', name: 'OpenAI GPT-OSS 20B (Groq • Fast Lightweight Execution)', provider: 'groq' },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Google)', provider: 'gemini' },
-  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Google)', provider: 'gemini' },
-  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Google)', provider: 'gemini' },
+  { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash (Google • High-Speed Agentic & Production)', provider: 'gemini' },
+  { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Google • Fast Workhorse & Coding)', provider: 'gemini' },
+  { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (Google • Deep Reasoning & Complex Tasks)', provider: 'gemini' },
 ];
 
 function getStoredModel(): string {
   if (typeof window === 'undefined') return DEFAULT_MODEL;
   const stored = localStorage.getItem(LOCAL_MODEL_KEY);
-  if (!stored || stored.includes('llama')) {
-    localStorage.setItem(LOCAL_MODEL_KEY, DEFAULT_MODEL);
-    return DEFAULT_MODEL;
+  if (!stored || stored.includes('llama') || stored.includes('1.5') || stored.includes('2.0')) {
+    const provider = localStorage.getItem(LOCAL_PROVIDER_KEY);
+    const fallback = provider === 'gemini' ? DEFAULT_GEMINI_MODEL : DEFAULT_MODEL;
+    localStorage.setItem(LOCAL_MODEL_KEY, fallback);
+    return fallback;
   }
   return stored;
 }
@@ -128,7 +131,7 @@ How can I assist your manuscript today?`,
 
   setProvider: (provider) => {
     localStorage.setItem(LOCAL_PROVIDER_KEY, provider);
-    const defaultForProvider = provider === 'groq' ? 'openai/gpt-oss-120b' : 'gemini-1.5-flash';
+    const defaultForProvider = provider === 'groq' ? 'openai/gpt-oss-120b' : 'gemini-3.6-flash';
     set({ provider, selectedModel: defaultForProvider });
     localStorage.setItem(LOCAL_MODEL_KEY, defaultForProvider);
   },

@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
-import Editor, { type Monaco, type OnMount } from '@monaco-editor/react';
+import Editor, { DiffEditor, type Monaco, type OnMount } from '@monaco-editor/react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAiStore } from '../../store/useAiStore';
+import { useAgentStore } from '../../store/useAgentStore';
 import { InlineCommandPalette } from '../AI/InlineCommandPalette';
-import { FileText, Image as ImageIcon, Sparkles, X, FileCode, BookOpen } from 'lucide-react';
+import { FileText, Image as ImageIcon, Sparkles, X, FileCode, BookOpen, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const MonacoLatexEditor: React.FC = () => {
   const {
@@ -23,8 +24,63 @@ export const MonacoLatexEditor: React.FC = () => {
   const { openInlineCommand, registerEditorActions } = useAiStore();
 
   const editorRef = useRef<any>(null);
+  const diffEditorRef = useRef<any>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const autoCompileTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const pendingEdits = useAgentStore((state) => state.pendingEdits);
+  const acceptEdit = useAgentStore((state) => state.acceptEdit);
+  const rejectEdit = useAgentStore((state) => state.rejectEdit);
+
+  const pendingEdit = pendingEdits[activeFilePath];
+  const editedFilePaths = Object.keys(pendingEdits);
+  const currentEditIndex = editedFilePaths.indexOf(activeFilePath);
+
+  const handleAcceptCurrent = () => {
+    acceptEdit(activeFilePath);
+    const remaining = editedFilePaths.filter((p) => p !== activeFilePath);
+    if (remaining.length > 0) {
+      setActiveFile(remaining[0]);
+    }
+  };
+
+  const handleRejectCurrent = () => {
+    rejectEdit(activeFilePath);
+    const remaining = editedFilePaths.filter((p) => p !== activeFilePath);
+    if (remaining.length > 0) {
+      setActiveFile(remaining[0]);
+    }
+  };
+
+  const handlePrevEditedFile = () => {
+    if (editedFilePaths.length <= 1) return;
+    const prevIdx = (currentEditIndex - 1 + editedFilePaths.length) % editedFilePaths.length;
+    setActiveFile(editedFilePaths[prevIdx]);
+  };
+
+  const handleNextEditedFile = () => {
+    if (editedFilePaths.length <= 1) return;
+    const nextIdx = (currentEditIndex + 1) % editedFilePaths.length;
+    setActiveFile(editedFilePaths[nextIdx]);
+  };
+
+  // Keyboard shortcuts for accepting/rejecting diff in editor
+  useEffect(() => {
+    if (!pendingEdit) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleAcceptCurrent();
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 'Backspace') {
+        e.preventDefault();
+        handleRejectCurrent();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pendingEdit, activeFilePath, editedFilePaths]);
 
   const activeFile = files[activeFilePath];
 
@@ -323,12 +379,13 @@ export const MonacoLatexEditor: React.FC = () => {
         <div className="editor-tabs-scroll" role="tablist">
           {openTabs.map((tabPath) => {
             const isActive = tabPath === activeFilePath;
+            const isPending = Boolean(pendingEdits[tabPath]);
             return (
               <div
                 key={tabPath}
                 role="tab"
                 aria-selected={isActive}
-                className={`editor-tab-pill ${isActive ? 'active' : ''}`}
+                className={`editor-tab-pill ${isActive ? 'active' : ''} ${isPending ? 'pending' : ''}`}
                 onClick={() => setActiveFile(tabPath)}
                 onAuxClick={(e) => {
                   if (e.button === 1) {
@@ -336,10 +393,15 @@ export const MonacoLatexEditor: React.FC = () => {
                     closeTab(tabPath);
                   }
                 }}
-                title={tabPath}
+                title={isPending ? `${tabPath} (Pending AI changes)` : tabPath}
               >
                 {getTabIcon(tabPath)}
                 <span className="tab-label">{tabPath}</span>
+                {isPending && (
+                  <span className="tab-pending-badge" title="Pending changes to review">
+                    M
+                  </span>
+                )}
                 {openTabs.length > 1 && (
                   <button
                     type="button"
@@ -372,7 +434,7 @@ export const MonacoLatexEditor: React.FC = () => {
         </div>
       </div>
 
-      {/* Editor Canvas or Binary Image Preview */}
+      {/* Editor Canvas or Binary Image Preview or Diff Editor */}
       {activeFile?.isBinary ? (
         <div className="binary-preview-container">
           <div className="binary-header">
@@ -385,6 +447,123 @@ export const MonacoLatexEditor: React.FC = () => {
               alt={activeFile.path}
               className="binary-image"
             />
+          </div>
+        </div>
+      ) : pendingEdit ? (
+        <div className="diff-editor-container">
+          <DiffEditor
+            height="100%"
+            language={language}
+            theme="vs-dark"
+            original={pendingEdit.originalContent}
+            modified={pendingEdit.newContent}
+            onMount={(diffEditor) => {
+              diffEditorRef.current = diffEditor;
+              const modifiedEditor = diffEditor.getModifiedEditor();
+              modifiedEditor.onDidChangeModelContent(() => {
+                const val = modifiedEditor.getValue();
+                updateFileContent(activeFilePath, val);
+              });
+            }}
+            options={{
+              renderSideBySide: false, // Unified inline diff view like Cursor/Windsurf
+              readOnly: false,
+              originalEditable: false,
+              fontSize: 13.5,
+              fontFamily: "'Fira Code', 'JetBrains Mono', 'Menlo', 'Monaco', monospace",
+              fontLigatures: true,
+              lineHeight: 22,
+              minimap: { enabled: true, scale: 0.8 },
+              scrollBeyondLastLine: false,
+              wordWrap: 'on',
+              automaticLayout: true,
+              lineNumbers: 'on',
+              renderWhitespace: 'selection',
+              smoothScrolling: true,
+              cursorBlinking: 'smooth',
+              cursorSmoothCaretAnimation: 'on',
+              diffWordWrap: 'on',
+            }}
+          />
+
+          {/* Floating Action Toolbar Overlay */}
+          <div className="diff-floating-toolbar">
+            <button
+              type="button"
+              className="diff-action-btn accept"
+              onClick={handleAcceptCurrent}
+              title="Accept Changes (⌘Enter)"
+            >
+              <Check size={12} />
+              <span>Accept Changes</span>
+              <span className="diff-shortcut">⌘⏎</span>
+            </button>
+
+            <button
+              type="button"
+              className="diff-action-btn reject"
+              onClick={handleRejectCurrent}
+              title="Reject Changes (⌘Backspace)"
+            >
+              <X size={12} />
+              <span>Reject</span>
+              <span className="diff-shortcut">⌘⌫</span>
+            </button>
+
+            <div className="diff-toolbar-divider" />
+
+            <button
+              type="button"
+              className="diff-nav-btn"
+              onClick={() => {
+                if (diffEditorRef.current?.goToDiff) {
+                  diffEditorRef.current.goToDiff('previous');
+                }
+              }}
+              title="Previous change"
+            >
+              <span>↑K</span>
+            </button>
+
+            <button
+              type="button"
+              className="diff-nav-btn"
+              onClick={() => {
+                if (diffEditorRef.current?.goToDiff) {
+                  diffEditorRef.current.goToDiff('next');
+                }
+              }}
+              title="Next change"
+            >
+              <span>↓J</span>
+            </button>
+
+            {editedFilePaths.length > 1 && (
+              <>
+                <div className="diff-toolbar-divider" />
+                <div className="diff-files-pager">
+                  <button
+                    type="button"
+                    className="diff-pager-arrow"
+                    onClick={handlePrevEditedFile}
+                    title="Previous edited file"
+                  >
+                    <ChevronLeft size={13} />
+                  </button>
+                  <span className="diff-pager-text">
+                    Edited files {currentEditIndex + 1}/{editedFilePaths.length}
+                  </span>
+                  <button
+                    type="button"
+                    className="diff-pager-arrow"
+                    onClick={handleNextEditedFile}
+                    title="Next edited file"
+                  >
+                    <ChevronRight size={13} />
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : (

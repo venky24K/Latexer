@@ -35,7 +35,7 @@ export const AiSettingsModal: React.FC = () => {
     if (activeTab === 'groq' && selectedModel.startsWith('gemini-')) {
       setSelectedModel('openai/gpt-oss-120b');
     } else if (activeTab === 'gemini' && !selectedModel.startsWith('gemini-')) {
-      setSelectedModel('gemini-1.5-flash');
+      setSelectedModel('gemini-3.6-flash');
     }
 
     setSaved(true);
@@ -200,7 +200,7 @@ export const AiSettingsModal: React.FC = () => {
               </label>
               <select
                 className="model-select-dropdown"
-                value={selectedModel.startsWith('gemini-') ? selectedModel : 'gemini-1.5-flash'}
+                value={selectedModel.startsWith('gemini-') ? selectedModel : 'gemini-3.6-flash'}
                 onChange={(e) => setSelectedModel(e.target.value)}
               >
                 {providerModels.map((m) => (

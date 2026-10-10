@@ -169,6 +169,14 @@ ${params.surroundingContext ? `Surrounding file context:\n${params.surroundingCo
 }
 
 // ================= Gemini Implementation =================
+function normalizeGeminiModel(model?: string): string {
+  if (!model) return 'gemini-3.6-flash';
+  if (model.includes('1.5') || model.includes('2.0')) {
+    return 'gemini-3.6-flash';
+  }
+  return model;
+}
+
 export async function chatWithGemini(params: {
   apiKey?: string;
   model?: string;
@@ -183,7 +191,7 @@ export async function chatWithGemini(params: {
   }
 
   const genAI = new GoogleGenerativeAI(key);
-  const modelName = params.model || 'gemini-1.5-flash';
+  const modelName = normalizeGeminiModel(params.model);
 
   const model = genAI.getGenerativeModel({
     model: modelName,
@@ -221,7 +229,7 @@ export async function inlineEditWithGemini(params: {
   }
 
   const genAI = new GoogleGenerativeAI(key);
-  const modelName = params.model || 'gemini-1.5-flash';
+  const modelName = normalizeGeminiModel(params.model);
 
   const model = genAI.getGenerativeModel({
     model: modelName,
@@ -288,6 +296,7 @@ export interface AgentMessage {
   }>;
   tool_call_id?: string;
   name?: string;
+  rawGeminiParts?: any[];
 }
 
 export interface AiAgentStepParams {
@@ -312,6 +321,7 @@ export interface AiAgentStepResult {
         arguments: string;
       };
     }>;
+    rawGeminiParts?: any[];
   };
 }
 
@@ -386,7 +396,7 @@ async function agentStepWithGemini(params: AiAgentStepParams): Promise<AiAgentSt
   }
 
   const genAI = new GoogleGenerativeAI(key);
-  const modelName = params.model || 'gemini-1.5-flash';
+  const modelName = normalizeGeminiModel(params.model);
 
   const functionDeclarations = params.tools.map((t) => ({
     name: t.name,
@@ -414,28 +424,39 @@ async function agentStepWithGemini(params: AiAgentStepParams): Promise<AiAgentSt
         parts: [{ text: m.content || '' }],
       });
     } else if (m.role === 'assistant') {
-      const parts: any[] = [];
-      if (m.content) parts.push({ text: m.content });
-      if (m.tool_calls) {
-        for (const tc of m.tool_calls) {
-          let argsObj: any = {};
-          try {
-            argsObj = typeof tc.function.arguments === 'string'
-              ? JSON.parse(tc.function.arguments)
-              : (tc.function.arguments || {});
-          } catch {
-            argsObj = {};
+      if (m.rawGeminiParts && Array.isArray(m.rawGeminiParts) && m.rawGeminiParts.length > 0) {
+        // Echo back the exact model parts including thought_signatures for seamless multi-turn reasoning
+        contents.push({ role: 'model', parts: m.rawGeminiParts });
+      } else {
+        const parts: any[] = [];
+        if (m.content) parts.push({ text: m.content });
+        if (m.tool_calls) {
+          for (const tc of m.tool_calls) {
+            let argsObj: any = {};
+            try {
+              argsObj = typeof tc.function.arguments === 'string'
+                ? JSON.parse(tc.function.arguments)
+                : (tc.function.arguments || {});
+            } catch {
+              argsObj = {};
+            }
+            const partObj: any = {
+              functionCall: {
+                name: tc.function.name,
+                args: argsObj,
+              },
+            };
+            const sig = (tc as any).thought_signature || (tc as any).thoughtSignature;
+            if (sig) {
+              partObj.thought_signature = sig;
+              partObj.thoughtSignature = sig;
+            }
+            parts.push(partObj);
           }
-          parts.push({
-            functionCall: {
-              name: tc.function.name,
-              args: argsObj,
-            },
-          });
         }
-      }
-      if (parts.length > 0) {
-        contents.push({ role: 'model', parts });
+        if (parts.length > 0) {
+          contents.push({ role: 'model', parts });
+        }
       }
     } else if (m.role === 'tool') {
       let parsedResponse: any;
@@ -455,13 +476,13 @@ async function agentStepWithGemini(params: AiAgentStepParams): Promise<AiAgentSt
         },
       };
 
-      // In Gemini, parallel function responses should be batched in the same 'function' turn
+      // In Gemini, function responses must be sent with role: 'user'
       const lastTurn = contents[contents.length - 1];
-      if (lastTurn && lastTurn.role === 'function') {
+      if (lastTurn && lastTurn.role === 'user' && lastTurn.parts?.some((p: any) => p.functionResponse)) {
         lastTurn.parts.push(functionResponsePart);
       } else {
         contents.push({
-          role: 'function',
+          role: 'user',
           parts: [functionResponsePart],
         });
       }
@@ -470,18 +491,28 @@ async function agentStepWithGemini(params: AiAgentStepParams): Promise<AiAgentSt
 
   const result = await model.generateContent({ contents });
   const response = result.response;
+  const candidate = response.candidates?.[0];
+  const rawGeminiParts = candidate?.content?.parts;
   const functionCalls = response.functionCalls();
 
   let tool_calls: any[] | undefined = undefined;
   if (functionCalls && functionCalls.length > 0) {
-    tool_calls = functionCalls.map((fc, idx) => ({
-      id: `call_${Date.now()}_${idx}`,
-      type: 'function',
-      function: {
-        name: fc.name,
-        arguments: JSON.stringify(fc.args),
-      },
-    }));
+    tool_calls = functionCalls.map((fc, idx) => {
+      const matchingPart = rawGeminiParts?.find(
+        (p: any) => p.functionCall && p.functionCall.name === fc.name
+      );
+      const sig = (matchingPart as any)?.thought_signature || (matchingPart as any)?.thoughtSignature;
+
+      return {
+        id: `call_${Date.now()}_${idx}`,
+        type: 'function',
+        function: {
+          name: fc.name,
+          arguments: JSON.stringify(fc.args),
+        },
+        thought_signature: sig,
+      };
+    });
   }
 
   let textContent: string | null = null;
@@ -497,6 +528,7 @@ async function agentStepWithGemini(params: AiAgentStepParams): Promise<AiAgentSt
       role: 'assistant',
       content: textContent,
       tool_calls,
+      rawGeminiParts,
     },
   };
 }

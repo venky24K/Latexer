@@ -1670,3 +1670,451 @@ body, html, #root {
   background: rgba(244, 63, 94, 0.3);
 }
 
+/* ==========================================================================
+   AI IDE Inline Diff, File Review Bar, and Compact Chat Summaries
+   ========================================================================== */
+
+/* 1. Staged Edited Files Box (above chat composer) */
+.ai-edited-files-box {
+  background: #18181b;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.ai-edited-files-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.ai-edited-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: background 0.12s ease;
+  user-select: none;
+}
+
+.ai-edited-file-item:last-child {
+  border-bottom: none;
+}
+
+.ai-edited-file-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ai-edited-file-item.active {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.ai-edited-file-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ai-file-ext-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1.5px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.ai-diff-stats {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.diff-plus {
+  color: #22c55e;
+}
+
+.diff-minus {
+  color: #ef4444;
+}
+
+.ai-edited-file-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.ai-edited-file-path {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-edited-file-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.ai-edited-file-item:hover .ai-edited-file-actions {
+  opacity: 1;
+}
+
+.ai-file-action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all 0.12s ease;
+}
+
+.ai-file-action-btn.accept:hover {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.ai-file-action-btn.reject:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.ai-edited-files-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #141416;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ai-edited-files-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.ai-edited-files-global-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-reject-all {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.12s ease;
+}
+
+.btn-reject-all:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.btn-accept-all {
+  background: #2563eb;
+  border: none;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.12s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.btn-accept-all:hover {
+  background: #1d4ed8;
+}
+
+/* 2. Monaco Diff Editor Container and Floating Toolbar */
+.diff-editor-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.diff-floating-toolbar {
+  position: absolute;
+  bottom: 24px;
+  left: 28px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(24, 24, 27, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.2);
+  animation: slideUp 0.18s ease-out;
+}
+
+.diff-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.12s ease;
+}
+
+.diff-action-btn.accept {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
+}
+
+.diff-action-btn.accept:hover {
+  background: #1d4ed8;
+}
+
+.diff-action-btn.reject {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.diff-action-btn.reject:hover {
+  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.diff-shortcut {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 1px 4px;
+  border-radius: 3px;
+  opacity: 0.9;
+}
+
+.diff-toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.diff-nav-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  padding: 4px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.diff-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+
+.diff-files-pager {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.diff-pager-arrow {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s ease;
+}
+
+.diff-pager-arrow:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.diff-pager-text {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+/* Tab pending changes badge */
+.tab-pending-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.18);
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 2px;
+}
+
+.editor-tab-pill.pending {
+  border-bottom-color: #fbbf24 !important;
+}
+
+/* 3. Compact Chat Panel Summaries (replacing raw diff cards) */
+.chat-summary-row {
+  margin: 4px 0;
+  border-radius: 6px;
+  font-size: 12px;
+  transition: all 0.12s ease;
+}
+
+.chat-summary-row.edited-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+
+.chat-summary-row.edited-file-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.summary-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.summary-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.summary-action-tag {
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+.summary-filename {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.summary-diff-counts {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  gap: 4px;
+}
+
+.summary-toggle-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  transition: background 0.12s ease;
+}
+
+.summary-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.summary-arrow {
+  transition: transform 0.18s ease;
+  color: var(--text-muted);
+}
+
+.summary-arrow.rotated {
+  transform: rotate(90deg);
+}
+
+.summary-details {
+  padding: 6px 10px 8px 10px;
+  margin-top: 2px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.summary-details-msg {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.summary-open-file-link {
+  margin-top: 6px;
+  background: transparent;
+  border: none;
+  color: #38bdf8;
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.summary-command-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+

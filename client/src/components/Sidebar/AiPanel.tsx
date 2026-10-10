@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAiStore } from '../../store/useAiStore';
 import { useProjectStore } from '../../store/useProjectStore';
-import { useAgentStore } from '../../store/useAgentStore';
+import { useAgentStore, type AgentToolCallLog, type PendingEdit } from '../../store/useAgentStore';
 import {
   Send,
   Trash2,
@@ -11,16 +11,261 @@ import {
   CornerDownLeft,
   Loader2,
   Bot,
-  Hammer,
-  FileEdit,
-  FileText,
-  Files,
-  Search,
-  PlusSquare,
   AlertCircle,
   Play,
   Square,
+  ChevronRight,
+  GitBranch,
+  X,
 } from 'lucide-react';
+
+/** Helper to provide color-coded file extension badges */
+const getFileBadge = (path: string) => {
+  const ext = (path.split('.').pop() || '').toLowerCase();
+  switch (ext) {
+    case 'tex':
+      return { label: 'TEX', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)' };
+    case 'bib':
+      return { label: 'BIB', color: '#a78bfa', bg: 'rgba(167, 139, 250, 0.15)' };
+    case 'ts':
+      return { label: 'TS', color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.15)' };
+    case 'tsx':
+      return { label: 'TSX', color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.15)' };
+    case 'js':
+    case 'jsx':
+      return { label: 'JS', color: '#facc15', bg: 'rgba(250, 204, 21, 0.15)' };
+    case 'json':
+      return { label: 'JSON', color: '#fb923c', bg: 'rgba(251, 146, 60, 0.15)' };
+    case 'md':
+      return { label: 'MD', color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.15)' };
+    case 'css':
+      return { label: 'CSS', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)' };
+    default:
+      return { label: (ext || 'FILE').toUpperCase().slice(0, 4), color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.15)' };
+  }
+};
+
+/** Summary card for edited files in chat panel */
+const EditedFileSummary: React.FC<{
+  tc: AgentToolCallLog;
+  onSelectFile: (path: string) => void;
+}> = ({ tc, onSelectFile }) => {
+  const path = tc.args.path || tc.diff?.path || 'unknown';
+  const badge = getFileBadge(path);
+  const fileName = path.split('/').pop() || path;
+  const added = tc.diff?.addedLines ?? 1;
+  const removed = tc.diff?.removedLines ?? 1;
+
+  return (
+    <div
+      className="chat-summary-row edited-file-row"
+      onClick={() => onSelectFile(path)}
+      title={`Click to review diff for ${path} in editor`}
+    >
+      <div className="summary-left">
+        <span className="summary-action-tag">Edited</span>
+        <span
+          className="ai-file-ext-badge"
+          style={{ color: badge.color, backgroundColor: badge.bg }}
+        >
+          {badge.label}
+        </span>
+        <span className="summary-filename">{fileName}</span>
+      </div>
+      <div className="summary-right">
+        <span className="summary-diff-counts">
+          <span className="diff-plus">+{added}</span>
+          <span className="diff-minus">-{removed}</span>
+        </span>
+      </div>
+    </div>
+  );
+};
+
+/** Compact collapsible row for read/list/search tools */
+const ExploredToolSummary: React.FC<{
+  tc: AgentToolCallLog;
+  onSelectFile: (path: string) => void;
+}> = ({ tc, onSelectFile }) => {
+  const [expanded, setExpanded] = useState(false);
+  const targetPath = tc.args.path as string | undefined;
+  const fileName = targetPath ? targetPath.split('/').pop() || targetPath : null;
+
+  const label =
+    tc.name === 'search_files'
+      ? `Searched "${tc.args.query || ''}"`
+      : fileName
+      ? `Explored ${fileName}`
+      : 'Explored files';
+
+  return (
+    <div className="chat-summary-row explored-row">
+      <button
+        type="button"
+        className="summary-toggle-btn"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="summary-left">
+          <span className="summary-action-tag">Explored</span>
+          <span className="summary-filename">{label.replace('Explored ', '')}</span>
+        </div>
+        <ChevronRight size={12} className={`summary-arrow ${expanded ? 'rotated' : ''}`} />
+      </button>
+
+      {expanded && (
+        <div className="summary-details">
+          {tc.resultMessage && <div className="summary-details-msg">{tc.resultMessage}</div>}
+          {targetPath && (
+            <button
+              type="button"
+              className="summary-open-file-link"
+              onClick={() => onSelectFile(targetPath)}
+            >
+              Open {targetPath} in editor
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Compact collapsible row for compiler/diagnostic tools */
+const RanToolSummary: React.FC<{ tc: AgentToolCallLog }> = ({ tc }) => {
+  const [expanded, setExpanded] = useState(false);
+  const isCompile = tc.name === 'compile_and_diagnose';
+
+  return (
+    <div className={`chat-summary-row ran-row ${tc.status}`}>
+      <button
+        type="button"
+        className="summary-toggle-btn"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="summary-left">
+          <span className="summary-action-tag">Ran</span>
+          <span className="summary-command-badge">
+            {isCompile ? `compile (${tc.args.engine || 'tectonic'})` : tc.name}
+          </span>
+          {tc.status === 'running' && <Loader2 size={11} className="spin text-amber" />}
+        </div>
+        <ChevronRight size={12} className={`summary-arrow ${expanded ? 'rotated' : ''}`} />
+      </button>
+
+      {expanded && tc.resultMessage && (
+        <div className="summary-details">
+          <div className="summary-details-msg">{tc.resultMessage}</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Staged Edited Files container on top of Chat Composer */
+const EditedFilesBox: React.FC<{
+  pendingEdits: Record<string, PendingEdit>;
+  activeFilePath: string;
+  onSelectFile: (path: string) => void;
+  onAcceptFile: (path: string) => void;
+  onRejectFile: (path: string) => void;
+  onAcceptAll: () => void;
+  onRejectAll: () => void;
+}> = ({
+  pendingEdits,
+  activeFilePath,
+  onSelectFile,
+  onAcceptFile,
+  onRejectFile,
+  onAcceptAll,
+  onRejectAll,
+}) => {
+  const editsList = Object.values(pendingEdits);
+  if (editsList.length === 0) return null;
+
+  return (
+    <div className="ai-edited-files-box">
+      <div className="ai-edited-files-list">
+        {editsList.map((edit) => {
+          const isActive = activeFilePath === edit.path;
+          const badge = getFileBadge(edit.path);
+          const fileName = edit.path.split('/').pop() || edit.path;
+
+          return (
+            <div
+              key={edit.path}
+              className={`ai-edited-file-item ${isActive ? 'active' : ''}`}
+              onClick={() => onSelectFile(edit.path)}
+              title={`Click to review diff for ${edit.path}`}
+            >
+              <div className="ai-edited-file-left">
+                <span
+                  className="ai-file-ext-badge"
+                  style={{ color: badge.color, backgroundColor: badge.bg }}
+                >
+                  {badge.label}
+                </span>
+                <span className="ai-diff-stats">
+                  <span className="diff-plus">+{edit.addedLines}</span>
+                  <span className="diff-minus">-{edit.removedLines}</span>
+                </span>
+                <span className="ai-edited-file-name">{fileName}</span>
+                <span className="ai-edited-file-path">{edit.path}</span>
+              </div>
+
+              <div className="ai-edited-file-actions" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  className="ai-file-action-btn accept"
+                  onClick={() => onAcceptFile(edit.path)}
+                  title="Accept changes for this file"
+                >
+                  <Check size={11} />
+                </button>
+                <button
+                  type="button"
+                  className="ai-file-action-btn reject"
+                  onClick={() => onRejectFile(edit.path)}
+                  title="Reject changes for this file"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="ai-edited-files-footer">
+        <div className="ai-edited-files-count">
+          <GitBranch size={13} className="text-muted" />
+          <span>
+            {editsList.length} {editsList.length === 1 ? 'File' : 'Files'} With Changes
+          </span>
+        </div>
+
+        <div className="ai-edited-files-global-actions">
+          <button
+            type="button"
+            className="btn-reject-all"
+            onClick={onRejectAll}
+            title="Reject all pending changes"
+          >
+            Reject all
+          </button>
+          <button
+            type="button"
+            className="btn-accept-all"
+            onClick={onAcceptAll}
+            title="Accept all pending changes"
+          >
+            <Check size={12} />
+            <span>Accept all</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const AiPanel: React.FC = () => {
   // Mode: 'agent' | 'chat'
@@ -46,12 +291,17 @@ export const AiPanel: React.FC = () => {
     maxSteps,
     logs: agentLogs,
     error: agentError,
+    pendingEdits,
     startAgentTask,
     stopAgent,
     clearAgentLogs,
+    acceptEdit,
+    rejectEdit,
+    acceptAllEdits,
+    rejectAllEdits,
   } = useAgentStore();
 
-  const { files, activeFilePath } = useProjectStore();
+  const { files, activeFilePath, setActiveFile } = useProjectStore();
 
   const [inputPrompt, setInputPrompt] = useState('');
   const [agentGoalInput, setAgentGoalInput] = useState('');
@@ -194,25 +444,6 @@ export const AiPanel: React.FC = () => {
     return parts;
   };
 
-  const getToolIcon = (name: string) => {
-    switch (name) {
-      case 'compile_and_diagnose':
-        return <Hammer size={12} className="text-amber" />;
-      case 'edit_file':
-        return <FileEdit size={12} className="text-blue" />;
-      case 'write_file':
-        return <PlusSquare size={12} className="text-green" />;
-      case 'read_file':
-        return <FileText size={12} className="text-muted" />;
-      case 'list_files':
-        return <Files size={12} className="text-muted" />;
-      case 'search_files':
-        return <Search size={12} className="text-blue" />;
-      default:
-        return <Bot size={12} />;
-    }
-  };
-
   const modelShortName = selectedModel
     ? (selectedModel.includes('/') ? selectedModel.split('/')[1] : selectedModel.replace('gemini-', ''))
     : 'AI';
@@ -313,44 +544,38 @@ export const AiPanel: React.FC = () => {
               </div>
             )}
 
-            {/* Agent Steps & Response without any subheading or title */}
+            {/* Agent Steps & Response: Compact summaries instead of raw diff blocks */}
             {agentLogs.map((step) => {
               const responseText = step.completedSummary;
               return (
                 <div key={step.stepIndex} className="agent-step-container">
-                  {/* Tool Invocations */}
-                  {step.toolCalls && step.toolCalls.map((tc) => (
-                    <div key={tc.id} className={`agent-tool-call ${tc.status}`}>
-                      <div className="agent-tool-title-row">
-                        <div className="agent-tool-name">
-                          {getToolIcon(tc.name)}
-                          <span>{tc.name}</span>
-                          {tc.args.path && <span className="text-muted">({tc.args.path})</span>}
-                          {tc.args.query && <span className="text-muted">("{tc.args.query}")</span>}
-                        </div>
-                        <span className={`agent-tool-badge ${tc.status}`}>
-                          {tc.status === 'running' ? 'Executing...' : tc.status}
-                        </span>
-                      </div>
-
-                      {tc.resultMessage && (
-                        <div className="agent-tool-msg">{tc.resultMessage}</div>
-                      )}
-
-                      {/* Diff Preview */}
-                      {tc.diff && (
-                        <div className="agent-diff-card">
-                          <div className="agent-diff-header">
-                            Changes in {tc.diff.path}
-                          </div>
-                          <div className="agent-diff-body">
-                            <div className="diff-target">- {tc.diff.target}</div>
-                            <div className="diff-replacement">+ {tc.diff.replacement}</div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {/* Tool Invocations: Rendered as clean summary rows matching the AI IDE style */}
+                  {step.toolCalls && step.toolCalls.map((tc) => {
+                    if (tc.name === 'edit_file' || tc.name === 'write_file') {
+                      return (
+                        <EditedFileSummary
+                          key={tc.id}
+                          tc={tc}
+                          onSelectFile={(p) => setActiveFile(p)}
+                        />
+                      );
+                    }
+                    if (tc.name === 'read_file' || tc.name === 'list_files' || tc.name === 'search_files') {
+                      return (
+                        <ExploredToolSummary
+                          key={tc.id}
+                          tc={tc}
+                          onSelectFile={(p) => setActiveFile(p)}
+                        />
+                      );
+                    }
+                    return (
+                      <RanToolSummary
+                        key={tc.id}
+                        tc={tc}
+                      />
+                    );
+                  })}
 
                   {/* Clean Agent Response without any subheading or title */}
                   {responseText && (
@@ -391,11 +616,22 @@ export const AiPanel: React.FC = () => {
             </div>
           )}
 
+          {/* Staged Edited Files bar right on top of Chat Composer */}
+          <EditedFilesBox
+            pendingEdits={pendingEdits}
+            activeFilePath={activeFilePath}
+            onSelectFile={(p) => setActiveFile(p)}
+            onAcceptFile={acceptEdit}
+            onRejectFile={rejectEdit}
+            onAcceptAll={acceptAllEdits}
+            onRejectAll={rejectAllEdits}
+          />
+
           {/* Agent Goal Input Composer */}
           <div className="ai-panel-composer">
             <textarea
               className="ai-panel-textarea"
-              placeholder="Give the agent a task (e.g. create a new section, add citations, fix errors)..."
+              placeholder="Ask anything, @ to mention, / for actions..."
               value={agentGoalInput}
               onChange={(e) => setAgentGoalInput(e.target.value)}
               onKeyDown={handleAgentKeyDown}
@@ -481,12 +717,23 @@ export const AiPanel: React.FC = () => {
             <div ref={chatEndRef} />
           </div>
 
+          {/* Staged Edited Files bar on top of Chat Composer */}
+          <EditedFilesBox
+            pendingEdits={pendingEdits}
+            activeFilePath={activeFilePath}
+            onSelectFile={(p) => setActiveFile(p)}
+            onAcceptFile={acceptEdit}
+            onRejectFile={rejectEdit}
+            onAcceptAll={acceptAllEdits}
+            onRejectAll={rejectAllEdits}
+          />
+
           {/* Chat Input Composer */}
           <div className="ai-panel-composer">
             <textarea
               ref={textareaRef}
               className="ai-panel-textarea"
-              placeholder="Ask Groq to proofread grammar, generate equations, or format tables..."
+              placeholder="Ask anything, @ to mention, / for actions..."
               value={inputPrompt}
               onChange={(e) => setInputPrompt(e.target.value)}
               onKeyDown={handleChatKeyDown}

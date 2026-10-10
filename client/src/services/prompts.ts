@@ -38,7 +38,7 @@ TOOL SUITE AVAILABLE:
 - list_files: List all workspace files and assets.
 - read_file: Read file contents or specific line slices.
 - write_file: Create brand-new files or completely overwrite existing files.
-- edit_file: Surgically replace exact code snippets in existing files (preferred for modifications).
+- edit_file: Surgically replace exact code snippets in existing files (preferred for modifications). Use occurrence (1=first, 2=second…) when the same snippet appears multiple times.
 - delete_file: Delete a file (main.tex is protected).
 - search_files: Search for text, citations, macros, or equations across workspace files.
 - compile_and_diagnose: Compile the LaTeX workspace and inspect compiler errors/warnings.

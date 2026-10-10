@@ -47,13 +47,14 @@ export const LATEXER_AGENT_TOOLS: AgentToolParam[] = [
   },
   {
     name: 'edit_file',
-    description: 'Surgically replace an exact code snippet in an existing file with new content. Include enough context in target_snippet so it matches uniquely.',
+    description: 'Surgically replace an exact code snippet in an existing file with new content. Include enough surrounding lines in target_snippet so it matches uniquely. Use occurrence to target the 2nd, 3rd, etc. match when a snippet appears more than once.',
     parameters: {
       type: 'object',
       properties: {
         path: { type: 'string', description: 'File path to modify' },
-        target_snippet: { type: 'string', description: 'Exact existing code snippet to locate and replace' },
+        target_snippet: { type: 'string', description: 'Exact existing code snippet to locate and replace. Include enough surrounding context lines to be unique.' },
         replacement_snippet: { type: 'string', description: 'New code snippet to replace the target snippet with' },
+        occurrence: { type: 'number', description: 'Which occurrence to replace (1 = first, 2 = second, etc.). Default is 1.' },
       },
       required: ['path', 'target_snippet', 'replacement_snippet'],
     },
@@ -101,6 +102,8 @@ export interface ToolExecutionOutput {
     path: string;
     target: string;
     replacement: string;
+    addedLines?: number;
+    removedLines?: number;
   };
 }
 
@@ -110,8 +113,9 @@ export async function executeAgentTool(
 ): Promise<ToolExecutionOutput> {
   const store = useProjectStore.getState();
   const files = store.files;
+  const normalizedToolName = toolName.includes(':') ? toolName.split(':').pop()! : toolName;
 
-  switch (toolName) {
+  switch (normalizedToolName) {
     case 'list_files': {
       const fileList = Object.keys(files).map((p) => ({
         path: p,
@@ -174,7 +178,7 @@ export async function executeAgentTool(
     }
 
     case 'edit_file': {
-      const { path, target_snippet, replacement_snippet } = args;
+      const { path, target_snippet, replacement_snippet, occurrence } = args;
       if (!path || target_snippet === undefined || replacement_snippet === undefined) {
         return { success: false, message: 'Missing required "path", "target_snippet", or "replacement_snippet" argument.' };
       }
@@ -186,19 +190,64 @@ export async function executeAgentTool(
         return { success: false, message: `Cannot edit binary file "${path}".` };
       }
 
+      // Helper: find the index of the nth occurrence of needle in haystack
+      function findNthIndex(haystack: string, needle: string, n: number): number {
+        let idx = -1;
+        let found = 0;
+        let searchFrom = 0;
+        while (found < n) {
+          idx = haystack.indexOf(needle, searchFrom);
+          if (idx === -1) return -1;
+          found++;
+          searchFrom = idx + 1;
+        }
+        return idx;
+      }
+
+      const targetOccurrence = typeof occurrence === 'number' && occurrence >= 1 ? Math.floor(occurrence) : 1;
       const currentContent = file.content;
-      const targetIndex = currentContent.indexOf(target_snippet);
+
+      // Count all occurrences
+      function countOccurrences(haystack: string, needle: string): number {
+        let count = 0;
+        let from = 0;
+        while (true) {
+          const i = haystack.indexOf(needle, from);
+          if (i === -1) break;
+          count++;
+          from = i + 1;
+        }
+        return count;
+      }
+
+      let targetIndex = findNthIndex(currentContent, target_snippet, targetOccurrence);
 
       if (targetIndex === -1) {
-        // Fallback: try trimmed matching or whitespace normalization
-        const normalizedTarget = target_snippet.replace(/\r\n/g, '\n').trim();
+        // Fallback: CRLF-normalise only (no .trim() to preserve indentation/context)
+        const normalizedTarget = target_snippet.replace(/\r\n/g, '\n');
         const normalizedContent = currentContent.replace(/\r\n/g, '\n');
-        const normIndex = normalizedContent.indexOf(normalizedTarget);
 
+        const totalNormalized = countOccurrences(normalizedContent, normalizedTarget);
+        if (totalNormalized === 0) {
+          return {
+            success: false,
+            message: `target_snippet was not found in "${path}". Please use read_file to copy the exact lines you want to replace.`,
+          };
+        }
+
+        // Check ambiguity in normalized path before committing
+        if (totalNormalized > 1 && targetOccurrence === 1) {
+          return {
+            success: false,
+            message: `target_snippet matches ${totalNormalized} locations in "${path}" (after CRLF normalization). Provide more surrounding context lines to make it unique, or use the "occurrence" parameter (e.g., occurrence: 2) to target a specific match.`,
+          };
+        }
+
+        const normIndex = findNthIndex(normalizedContent, normalizedTarget, targetOccurrence);
         if (normIndex === -1) {
           return {
             success: false,
-            message: `target_snippet was not found in "${path}". Please read the file first to copy the exact lines to replace.`,
+            message: `Occurrence ${targetOccurrence} does not exist (only ${totalNormalized} occurrences found) in "${path}".`,
           };
         }
 
@@ -210,17 +259,27 @@ export async function executeAgentTool(
         store.updateFileContent(path, newContent);
         return {
           success: true,
-          message: `Successfully edited "${path}" (whitespace-normalized match).`,
-          diff: { path, target: target_snippet, replacement: replacement_snippet },
+          message: `Successfully edited "${path}" (CRLF-normalized match, occurrence ${targetOccurrence}).`,
+          diff: {
+            path,
+            target: target_snippet.length > 200 ? target_snippet.slice(0, 200) + '…' : target_snippet,
+            replacement: replacement_snippet.length > 200 ? replacement_snippet.slice(0, 200) + '…' : replacement_snippet,
+          },
         };
       }
 
-      // Check for multiple occurrences
-      const secondIndex = currentContent.indexOf(target_snippet, targetIndex + 1);
-      if (secondIndex !== -1) {
+      // Exact match path
+      const totalExact = countOccurrences(currentContent, target_snippet);
+      if (totalExact > 1 && targetOccurrence === 1) {
         return {
           success: false,
-          message: `target_snippet was found multiple times in "${path}". Please provide more surrounding lines in target_snippet to make it uniquely identifiable.`,
+          message: `target_snippet matches ${totalExact} locations in "${path}". Provide more surrounding context lines to make it unique, or use the "occurrence" parameter (e.g., occurrence: 2) to target a specific match.`,
+        };
+      }
+      if (targetOccurrence > totalExact) {
+        return {
+          success: false,
+          message: `Occurrence ${targetOccurrence} does not exist (only ${totalExact} occurrences found) in "${path}".`,
         };
       }
 
@@ -232,8 +291,12 @@ export async function executeAgentTool(
       store.updateFileContent(path, newContent);
       return {
         success: true,
-        message: `Successfully edited "${path}".`,
-        diff: { path, target: target_snippet, replacement: replacement_snippet },
+        message: `Successfully edited "${path}"${targetOccurrence > 1 ? ` (occurrence ${targetOccurrence})` : ''}.`,
+        diff: {
+          path,
+          target: target_snippet.length > 200 ? target_snippet.slice(0, 200) + '…' : target_snippet,
+          replacement: replacement_snippet.length > 200 ? replacement_snippet.slice(0, 200) + '…' : replacement_snippet,
+        },
       };
     }
 
