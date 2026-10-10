@@ -13,7 +13,7 @@
 | **Phase 2** | **Design Token System** | Tailwind CSS v4 + Semantic `@theme` + Dark Theme | `[COMPLETED]` | Delivered |
 | **Phase 3** | **Dual AI Copilot & VS Code Activity Bar** | Groq LPU + Gemini + VS Code Activity Bar + Multi-View Sidebar | `[COMPLETED]` | Delivered |
 | **Phase 4** | **Agentic AI & Research Intelligence** | Dual-Mode ChatPanel + Autonomous Agent + Tool Calling + Reasoning + Base Paper Reading + Humanizer | `[IN PROGRESS]` | Q2 2026 |
-| **Phase 5** | **Professional IDE Workspace & Navigation** | Application Menu Bar + Editor Tab Pills + Folder Tree + Outline Navigator + Settings Hub | `[IN PROGRESS]` | Q2 2026 |
+| **Phase 5** | **Professional IDE Workspace & Navigation** | Application Menu Bar + Editor Tab Pills + Settings Hub + PDF Preview Controls | `[COMPLETED]` | Delivered |
 | **Phase 6** | **Overleaf Industrial Differentiators** | AI Doctor, SyncTeX, Smart DOI/BibTeX, TikZ Studio, PDF Diff, Pandoc/Word Export | `[PLANNED]` | Q3 2026 |
 | **Phase 7** | **Sandboxing, Decoupled Queue & WASM** | Docker/Firecracker, BullMQ + Redis, Client-side WASM TeX (Offline) | `[PLANNED]` | Q3 2026 |
 | **Phase 8** | **Multiplayer CRDTs & Git Sync** | Yjs Real-Time Engine, Track Changes, GitHub Two-Way Sync | `[PLANNED]` | Q4 2026 |
@@ -257,26 +257,38 @@ flowchart TB
 
 ---
 
-## 🖥️ Phase 5: Professional IDE Workspace, Application Menu & Settings Hub `[IN PROGRESS]`
+## 🖥️ Phase 5: Professional IDE Workspace, Application Menu & Settings Hub `[COMPLETED]`
 
-### 5.1 Desktop Application Menu Bar (`File`, `Edit`, `Insert`, `View`, `Format`, `Help`) `[TODO]`
-- [ ] Desktop-grade application menu bar with dropdown menus and keyboard accelerators:
-  - **File**: New File, New Folder, Upload File, Upload Image, Download PDF, Export ZIP, Project Settings.
-  - **Edit**: Undo (`⌘Z`), Redo (`⌘⇧Z`), Find (`⌘F`), Replace (`⌘H`), Select All (`⌘A`), Format Document (`⌥⇧F`).
-  - **Insert**: Section, Equation (`align`), Figure (`graphicx`), Table (`booktabs`), Citation (`\cite`), Math Symbol, Algorithm.
-  - **View**: Toggle Activity Bar, Toggle Sidebar (`⌘B`), Toggle Logs Drawer (`⌘J`), Split / Editor-Only / Preview-Only, Zoom In/Out.
-  - **Format**: Bold (`⌘B`), Italic (`⌘I`), Underline, Inline Math (`$`), Display Math (`$$`), Toggle Comment (`⌘/`), Indent/Outdent.
-  - **Help**: LaTeX Cheat Sheet, Keyboard Shortcuts Modal, TeX Engine Status, Documentation, About Latexer.
+### 5.1 Desktop Application Menu Bar (`File`, `Edit`, `Insert`, `View`, `Format`, `Help`) `[COMPLETED]`
+- [x] Desktop-grade application menu bar with interactive dropdown menus, keyboard accelerators, and Monaco event dispatcher:
+  - **File**: New File (`.tex`), Upload File, Templates Picker, Download PDF, Export Project ZIP, Settings (`⌘,`).
+  - **Edit**: Undo (`⌘Z`), Redo (`⌘⇧Z`), AI Inline Assistant (`⌘K`), Toggle AI Sidebar, Clear AI Chat.
+  - **Insert**: Section, Subsection, Figure environment (`graphicx`), Table environment (`tabular`), Equation environment (`equation`), Citation (`\cite`), Footnote (`\footnote`).
+  - **View**: Split View, Code Focus (Editor Only), Reading Focus (PDF Only), Toggle Logs & Diagnostics (`⌘J`), Reset Layout Proportions.
+  - **Format**: Bold (`\textbf`), Italic (`\textit`), Monospace Code (`\texttt`), Itemize (Bullet list), Enumerate (Numbered list).
+  - **Help**: Interactive Keyboard Shortcuts, LaTeX Quick Reference & Cheatsheet modal, Local TeX Engine Setup dialog, About ElseWhere modal.
+- [x] **Dynamic Title Bar & Full Document Name**:
+  - Center-positioned, adaptive-width document name input (`min-w-[320px]` to `540px`) preventing truncation and showing the complete project title.
+  - Streamlined `h-10 min-h-[40px]` navbar height saving vertical screen real-estate for the editor and preview.
 
-### 5.2 Opened File Tab Pills Bar (Multi-File Editor Tabs) `[TODO]`
-- [ ] Multi-file tab bar positioned above the Monaco LaTeX editor:
-  - Displays file pill tabs for all active files (`main.tex`, `references.bib`, `custom.sty`).
+### 5.2 Opened File Tab Pills Bar (Multi-File Editor Tabs) `[COMPLETED]`
+- [x] Multi-file tab bar positioned above the Monaco LaTeX editor (`EditorTabs.tsx` / `MonacoLatexEditor.tsx`):
+  - Displays file pill tabs for all open virtual files (`main.tex`, `references.bib`, `custom.sty`).
   - Active tab highlight with distinct border and background tokens.
-  - Dirty state indicator (`•` dot) indicating unsaved / modified buffer.
-  - Tab interactions: close tab (`×`), pin tab, drag-and-drop tab reordering, close other tabs, close tabs to the right.
-  - Shortcuts: `⌘W` to close active tab, `⌘1`–`⌘9` / `Ctrl+Tab` for rapid tab cycling.
+  - Close tab (`×`) action button on each tab pill.
+  - Context menu on tabs: Close, Close Others, Close All.
+  - Shortcuts: `⌘W` to close active tab, `⌘1`–`⌘9` for instant tab switching.
 
-### 5.3 Hierarchical Folders & Directory Creation in VFS `[TODO]`
+### 5.3 PDF Viewer Toolbar & Smart File Downloads `[COMPLETED]`
+- [x] **Top Preview Toolbar Reorganization** (`PdfViewer.tsx`):
+  - Recompile button relocated directly to the PDF preview toolbar with compilation spinner and status color transitions.
+  - Compact icon-based diagnostics badge (`AlertCircle` for errors, `AlertTriangle` for warnings, `CheckCircle2` for compiled, `Terminal` for ready) with count badges. Clicking toggles compilation logs drawer.
+  - Zoom controls (Zoom In, Zoom Out, Fit to Width) and continuous page navigation controls.
+- [x] **Project-Named PDF Downloads**:
+  - Client-side blob fetching using `saveAs(blob, `${cleanName}.pdf`)` guaranteeing that the browser uses the project name (e.g., `academic_research_manuscript.pdf`) without server `main.pdf` header overrides.
+  - Backend `/api/pdf/:buildId` endpoint supporting `?filename=` query parameter and dynamic `Content-Disposition: attachment`.
+
+### 5.4 Hierarchical Folders & Directory Creation in VFS `[IN PROGRESS]`
 - [ ] Support nested directory hierarchies in the Virtual File System (e.g., `chapters/intro.tex`, `figures/diagram.png`, `styles/macros.sty`).
 - [ ] **Folder Operations**:
   - "New Folder" icon and context menu option in the File Explorer panel.
@@ -285,22 +297,17 @@ flowchart TB
 - [ ] **Compiler Sandbox Path Preservation**:
   - Compiler worker preserves relative folder structures so `\input{chapters/intro}` and `\includegraphics{figures/diagram}` compile seamlessly without path errors.
 
-### 5.4 Advanced Document Outline & Section Tree Navigator `[TODO]`
-- [ ] Hierarchical document structure parser supporting:
-  - Structural levels: `\part`, `\chapter`, `\section`, `\subsection`, `\subsubsection`, `\paragraph`.
-  - Floating environments: `\begin{table}` (with `\caption`), `\begin{figure}`, `\begin{equation}` (with `\label`), theorems, lemmas.
-- [ ] **Interactive Outline Navigation**:
-  - Click-to-jump navigation scrolling Monaco directly to the section definition.
-  - Active section highlight following the editor cursor position in real time.
-  - Structural drag-and-drop: dragging a subsection in the outline automatically reorders the underlying LaTeX block in the file.
-
-### 5.5 Comprehensive Multi-Category Settings Hub `[TODO]`
-- [ ] Unified, tabbed Settings dialog with deep customization categories:
-  - **Editor**: Font family (Fira Code, JetBrains Mono, Inter), font size, ligatures, line wrapping, line numbers, minimap toggle, tab size, cursor style, bracket pair colorization.
-  - **Spelling & Language**: LTeX / LanguageTool grammar check, UK English vs. US English dictionaries, custom user dictionary for scientific terms, LaTeX-aware spell checking (ignores math and commands).
-  - **Compiler**: Default engine selection, custom compiler flags, compile timeout (s), auto-compile debounce delay, shell-escape policy, SyncTeX generation flag.
-  - **AI Models & Intelligence**: API keys (Groq, Gemini, OpenAI, Claude, local Ollama), default model selector, temperature slider, reasoning effort, custom system prompt/persona, fallback provider.
-  - **Keybindings & Shortcuts**: Interactive keyboard shortcuts viewer and custom remapping table.
+### 5.5 Comprehensive Multi-Category Settings Hub (`SettingsModal.tsx`) `[COMPLETED]`
+- [x] Unified, tabbed Settings dialog with deep customization categories:
+  - **Appearance**: Editor Theme (Dark / Light / Warm Parchment), Dark Mode PDF toggle, Font Size slider, Font Family (Inter, JetBrains Mono, Fira Code), Line Height slider, Custom PDF background color picker.
+  - **Editor**: Word Wrap toggle, Line Numbers mode (`on` / `off`), Bracket Pair Colorization, Code Snippets toggle.
+  - **Compiler**: Default engine selection (Auto, Tectonic, LaTeXmk, pdfLaTeX, XeLaTeX), Auto-compile toggle with debouncing.
+  - **Spelling & Language**: Spell check toggle, Language selector (en-US, en-GB, fr, de, es).
+  - **References**: BibTeX citation management, auto-formatting keys.
+  - **Notifications**: Notify on compile error, notify on compilation success.
+  - **AI Models & Intelligence**: Provider toggle (Groq LPU vs. Google Gemini), API key management, active model selector.
+- [x] **Advanced Document Outline & Section Tree Navigator** (`OutlinePanel.tsx`):
+  - Hierarchical LaTeX element parsing (`\section`, `\subsection`, `figure`, `table`, `equation`) with 1-click line jumping.
 
 ---
 
