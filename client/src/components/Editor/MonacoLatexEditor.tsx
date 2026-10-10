@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import Editor, { DiffEditor, type Monaco, type OnMount } from '@monaco-editor/react';
+import { setupMonacoLatex } from './latexLanguage';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAiStore } from '../../store/useAiStore';
 import { useAgentStore } from '../../store/useAgentStore';
@@ -122,33 +123,8 @@ export const MonacoLatexEditor: React.FC = () => {
     editorRef.current = editor;
     monacoRef.current = monaco;
 
-    // Register ElseWhere theme matching violet/slate palette
-    monaco.editor.defineTheme('elsewhere-warm', {
-      base: 'vs',
-      inherit: true,
-      rules: [
-        { token: 'comment', foreground: '94A3B8', fontStyle: 'italic' },
-        { token: 'keyword', foreground: '6055E8', fontStyle: 'bold' },
-        { token: 'string', foreground: '0284c7' },
-        { token: 'number', foreground: '704BEA' },
-        { token: 'delimiter', foreground: '4B5563' },
-      ],
-      colors: {
-        'editor.background': '#FFFFFF',
-        'editor.foreground': '#111827',
-        'editorCursor.foreground': '#6055E8',
-        'editorLineNumber.foreground': '#CBD5E1',
-        'editorLineNumber.activeForeground': '#111827',
-        'editor.selectionBackground': '#EDE9FE',
-        'editor.lineHighlightBackground': '#F8F9FE',
-        'editorGutter.background': '#FFFFFF',
-        'diffEditor.insertedTextBackground': '#6055E822',
-        'diffEditor.removedTextBackground': '#ef444422',
-        'diffEditor.insertedLineBackground': '#6055E812',
-        'diffEditor.removedLineBackground': '#ef444412',
-      },
-    });
-    monaco.editor.setTheme('elsewhere-warm');
+    // Configure LaTeX language, Monarch syntax highlighter and theme
+    setupMonacoLatex(monaco);
 
     // Register LaTeX snippets & autocompletions
     monaco.languages.registerCompletionItemProvider('latex', {
@@ -591,6 +567,7 @@ export const MonacoLatexEditor: React.FC = () => {
             height="100%"
             language={language}
             theme="elsewhere-warm"
+            beforeMount={setupMonacoLatex}
             original={pendingEdit.originalContent}
             modified={pendingEdit.newContent}
             onMount={(diffEditor) => {
@@ -605,10 +582,11 @@ export const MonacoLatexEditor: React.FC = () => {
               renderSideBySide: false, // Unified inline diff view like Cursor/Windsurf
               readOnly: false,
               originalEditable: false,
-              fontSize: 13.5,
-              fontFamily: "'Fira Code', 'JetBrains Mono', 'Menlo', 'Monaco', monospace",
+              fontSize: 12,
+              fontWeight: '400',
+              fontFamily: "'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', monospace",
               fontLigatures: true,
-              lineHeight: 22,
+              lineHeight: 19,
               minimap: { enabled: true, scale: 0.8 },
               scrollBeyondLastLine: false,
               wordWrap: 'on',
@@ -709,14 +687,16 @@ export const MonacoLatexEditor: React.FC = () => {
             height="100%"
             language={language}
             theme="elsewhere-warm"
+            beforeMount={setupMonacoLatex}
             value={activeFile?.content || ''}
             onChange={handleContentChange}
             onMount={handleEditorDidMount}
             options={{
-              fontSize: 13.5,
-              fontFamily: "'Fira Code', 'JetBrains Mono', 'Menlo', 'Monaco', monospace",
+              fontSize: 12,
+              fontWeight: '400',
+              fontFamily: "'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', monospace",
               fontLigatures: true,
-              lineHeight: 22,
+              lineHeight: 19,
               minimap: { enabled: true, scale: 0.8 },
               scrollBeyondLastLine: false,
               wordWrap: 'on',

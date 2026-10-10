@@ -53,9 +53,7 @@ export const TopNav: React.FC = () => {
       {/* Left: Brand, Sidebar Toggle & Project Name */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <div className="w-[26px] h-[26px] bg-gradient-to-br from-[#00b875] to-[#0284c7] rounded-md flex items-center justify-center shadow-sm">
-            <span className="font-serif font-black text-base text-white leading-none">E</span>
-          </div>
+          <img src="/logo.svg" alt="ElseWhere Logo" className="w-[26px] h-[26px] object-contain" />
           <span className="font-bold text-[15px] tracking-tight text-text-primary">ElseWhere</span>
         </div>
 
