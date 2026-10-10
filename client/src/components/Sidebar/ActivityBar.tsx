@@ -55,22 +55,30 @@ export const ActivityBar: React.FC = () => {
   ];
 
   return (
-    <nav className="activity-bar" aria-label="Activity Bar">
+    <nav className="w-[46px] min-w-[46px] h-full bg-sidebar border-r border-border-subtle flex flex-col justify-between items-center z-10 select-none shrink-0" aria-label="Activity Bar">
       {/* Top Group: Primary Navigation Views */}
-      <div className="activity-bar-group top">
+      <div className="flex flex-col items-center w-full gap-0.5 pt-1">
         {topItems.map((item) => {
           const isActive = !sidebarCollapsed && activeSidebarTab === item.id;
           return (
             <button
               key={item.id}
               type="button"
-              className={`activity-bar-btn ${isActive ? 'active' : ''}`}
+              className={`w-full h-11 bg-transparent border-none border-l-2 flex items-center justify-center cursor-pointer transition-all duration-150 relative ${
+                isActive
+                  ? 'text-text-primary border-l-brand bg-[rgba(44,38,30,0.08)]'
+                  : 'text-text-muted border-l-transparent hover:text-text-primary hover:bg-[rgba(44,38,30,0.05)]'
+              }`}
               onClick={() => toggleSidebarTab(item.id)}
               title={`${item.label} ${item.shortcut ? `(${item.shortcut})` : ''}`}
             >
-              <div className="activity-icon-wrapper">
+              <div className="relative flex items-center justify-center">
                 {item.icon}
-                {item.badge && <span className="activity-badge">{item.badge}</span>}
+                {item.badge && (
+                  <span className="absolute -top-1 -right-2 bg-brand text-white text-[9px] font-bold px-1 py-0.5 rounded-full leading-none">
+                    {item.badge}
+                  </span>
+                )}
               </div>
             </button>
           );
@@ -78,10 +86,10 @@ export const ActivityBar: React.FC = () => {
       </div>
 
       {/* Bottom Group: Settings & Engine Configuration */}
-      <div className="activity-bar-group bottom">
+      <div className="flex flex-col items-center w-full pb-2">
         <button
           type="button"
-          className="activity-bar-btn settings"
+          className="w-full h-11 bg-transparent border-none border-l-2 border-l-transparent text-text-muted flex items-center justify-center cursor-pointer transition-all duration-150 hover:text-text-primary hover:bg-[rgba(44,38,30,0.05)]"
           onClick={() => setSettingsModalOpen(true)}
           title="AI & Engine Settings"
         >

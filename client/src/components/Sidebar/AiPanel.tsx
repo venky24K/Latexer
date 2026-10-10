@@ -59,24 +59,24 @@ const EditedFileSummary: React.FC<{
 
   return (
     <div
-      className="chat-summary-row edited-file-row"
+      className="flex items-center justify-between p-1.5 px-2 bg-card hover:bg-card-hover border border-border-subtle hover:border-brand rounded-md text-xs cursor-pointer transition-all duration-150 my-1"
       onClick={() => onSelectFile(path)}
       title={`Click to review diff for ${path} in editor`}
     >
-      <div className="summary-left">
-        <span className="summary-action-tag">Edited</span>
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className="text-text-muted text-[11.5px]">Edited</span>
         <span
-          className="ai-file-ext-badge"
+          className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase font-mono"
           style={{ color: badge.color, backgroundColor: badge.bg }}
         >
           {badge.label}
         </span>
-        <span className="summary-filename">{fileName}</span>
+        <span className="font-semibold text-text-primary text-xs truncate">{fileName}</span>
       </div>
-      <div className="summary-right">
-        <span className="summary-diff-counts">
-          <span className="diff-plus">+{added}</span>
-          <span className="diff-minus">-{removed}</span>
+      <div className="flex items-center gap-1">
+        <span className="font-mono text-[11px] font-semibold flex gap-1">
+          <span className="text-emerald-700">+{added}</span>
+          <span className="text-rose-700">-{removed}</span>
         </span>
       </div>
     </div>
@@ -100,26 +100,26 @@ const ExploredToolSummary: React.FC<{
       : 'Explored files';
 
   return (
-    <div className="chat-summary-row explored-row">
+    <div className="my-1 rounded-md text-xs transition-all">
       <button
         type="button"
-        className="summary-toggle-btn"
+        className="w-full bg-transparent border-0 p-1 px-2 flex items-center justify-between cursor-pointer text-text-secondary rounded-md hover:bg-card transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="summary-left">
-          <span className="summary-action-tag">Explored</span>
-          <span className="summary-filename">{label.replace('Explored ', '')}</span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-text-muted text-[11.5px]">Explored</span>
+          <span className="font-semibold text-text-primary text-xs truncate">{label.replace('Explored ', '')}</span>
         </div>
-        <ChevronRight size={12} className={`summary-arrow ${expanded ? 'rotated' : ''}`} />
+        <ChevronRight size={12} className={`text-text-muted transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`} />
       </button>
 
       {expanded && (
-        <div className="summary-details">
-          {tc.resultMessage && <div className="summary-details-msg">{tc.resultMessage}</div>}
+        <div className="p-2 px-2.5 mt-0.5 bg-card-hover border border-border-subtle rounded text-[11.5px] text-text-secondary">
+          {tc.resultMessage && <div className="whitespace-pre-wrap break-words leading-relaxed">{tc.resultMessage}</div>}
           {targetPath && (
             <button
               type="button"
-              className="summary-open-file-link"
+              className="mt-1.5 bg-transparent border-0 text-sky-600 hover:text-sky-700 text-[11px] cursor-pointer underline p-0"
               onClick={() => onSelectFile(targetPath)}
             >
               Open {targetPath} in editor
@@ -137,25 +137,25 @@ const RanToolSummary: React.FC<{ tc: AgentToolCallLog }> = ({ tc }) => {
   const isCompile = tc.name === 'compile_and_diagnose';
 
   return (
-    <div className={`chat-summary-row ran-row ${tc.status}`}>
+    <div className="my-1 rounded-md text-xs transition-all">
       <button
         type="button"
-        className="summary-toggle-btn"
+        className="w-full bg-transparent border-0 p-1 px-2 flex items-center justify-between cursor-pointer text-text-secondary rounded-md hover:bg-card transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="summary-left">
-          <span className="summary-action-tag">Ran</span>
-          <span className="summary-command-badge">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-text-muted text-[11.5px]">Ran</span>
+          <span className="font-mono text-[11px] text-text-primary bg-black/5 px-1.5 py-0.5 rounded">
             {isCompile ? `compile (${tc.args.engine || 'tectonic'})` : tc.name}
           </span>
-          {tc.status === 'running' && <Loader2 size={11} className="spin text-amber" />}
+          {tc.status === 'running' && <Loader2 size={11} className="animate-spin text-amber-500" />}
         </div>
-        <ChevronRight size={12} className={`summary-arrow ${expanded ? 'rotated' : ''}`} />
+        <ChevronRight size={12} className={`text-text-muted transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`} />
       </button>
 
       {expanded && tc.resultMessage && (
-        <div className="summary-details">
-          <div className="summary-details-msg">{tc.resultMessage}</div>
+        <div className="p-2 px-2.5 mt-0.5 bg-card-hover border border-border-subtle rounded text-[11.5px] text-text-secondary">
+          <div className="whitespace-pre-wrap break-words leading-relaxed">{tc.resultMessage}</div>
         </div>
       )}
     </div>
@@ -184,8 +184,8 @@ const EditedFilesBox: React.FC<{
   if (editsList.length === 0) return null;
 
   return (
-    <div className="ai-edited-files-box">
-      <div className="ai-edited-files-list">
+    <div className="bg-card border-t border-border-subtle flex flex-col max-h-[140px] overflow-hidden">
+      <div className="overflow-y-auto flex-1 p-1.5 flex flex-col gap-1">
         {editsList.map((edit) => {
           const isActive = activeFilePath === edit.path;
           const badge = getFileBadge(edit.path);
@@ -194,29 +194,31 @@ const EditedFilesBox: React.FC<{
           return (
             <div
               key={edit.path}
-              className={`ai-edited-file-item ${isActive ? 'active' : ''}`}
+              className={`flex items-center justify-between p-1.5 px-2 rounded hover:bg-card-hover cursor-pointer transition-colors border ${
+                isActive ? 'bg-card-hover border-border-subtle' : 'border-transparent'
+              }`}
               onClick={() => onSelectFile(edit.path)}
               title={`Click to review diff for ${edit.path}`}
             >
-              <div className="ai-edited-file-left">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
                 <span
-                  className="ai-file-ext-badge"
+                  className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase font-mono"
                   style={{ color: badge.color, backgroundColor: badge.bg }}
                 >
                   {badge.label}
                 </span>
-                <span className="ai-diff-stats">
-                  <span className="diff-plus">+{edit.addedLines}</span>
-                  <span className="diff-minus">-{edit.removedLines}</span>
+                <span className="font-mono text-[11px] font-semibold flex gap-1 shrink-0">
+                  <span className="text-emerald-700">+{edit.addedLines}</span>
+                  <span className="text-rose-700">-{edit.removedLines}</span>
                 </span>
-                <span className="ai-edited-file-name">{fileName}</span>
-                <span className="ai-edited-file-path">{edit.path}</span>
+                <span className="font-semibold text-xs text-text-primary truncate">{fileName}</span>
+                <span className="text-[10px] text-text-muted truncate hidden sm:inline">{edit.path}</span>
               </div>
 
-              <div className="ai-edited-file-actions" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                 <button
                   type="button"
-                  className="ai-file-action-btn accept"
+                  className="p-1 rounded text-emerald-600 hover:bg-emerald-500/10 cursor-pointer border-0 bg-transparent transition-colors"
                   onClick={() => onAcceptFile(edit.path)}
                   title="Accept changes for this file"
                 >
@@ -224,7 +226,7 @@ const EditedFilesBox: React.FC<{
                 </button>
                 <button
                   type="button"
-                  className="ai-file-action-btn reject"
+                  className="p-1 rounded text-rose-600 hover:bg-rose-500/10 cursor-pointer border-0 bg-transparent transition-colors"
                   onClick={() => onRejectFile(edit.path)}
                   title="Reject changes for this file"
                 >
@@ -236,18 +238,18 @@ const EditedFilesBox: React.FC<{
         })}
       </div>
 
-      <div className="ai-edited-files-footer">
-        <div className="ai-edited-files-count">
-          <GitBranch size={13} className="text-muted" />
+      <div className="flex items-center justify-between px-2.5 py-1.5 bg-card border-t border-border-subtle text-xs">
+        <div className="flex items-center gap-1.5 text-text-muted text-[11px]">
+          <GitBranch size={13} className="text-text-muted" />
           <span>
             {editsList.length} {editsList.length === 1 ? 'File' : 'Files'} With Changes
           </span>
         </div>
 
-        <div className="ai-edited-files-global-actions">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
-            className="btn-reject-all"
+            className="text-text-secondary hover:text-text-primary text-[11px] px-2 py-0.5 rounded hover:bg-black/5 border-0 bg-transparent cursor-pointer transition-colors"
             onClick={onRejectAll}
             title="Reject all pending changes"
           >
@@ -255,7 +257,7 @@ const EditedFilesBox: React.FC<{
           </button>
           <button
             type="button"
-            className="btn-accept-all"
+            className="bg-brand hover:bg-brand-hover text-white text-[11px] font-medium px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer transition-colors border-0"
             onClick={onAcceptAll}
             title="Accept all pending changes"
           >
@@ -395,22 +397,22 @@ export const AiPanel: React.FC = () => {
                 const isCopied = copiedId === blockId;
 
                 return (
-                  <div key={blockId} className="ai-code-card">
-                    <div className="ai-code-header">
-                      <span className="ai-code-lang">{lang}</span>
-                      <div className="ai-code-actions">
+                  <div key={blockId} className="my-2 bg-[#201c18] border border-border-subtle rounded-md overflow-hidden text-xs">
+                    <div className="flex items-center justify-between px-2.5 py-1 bg-[#1a1714] border-b border-white/5">
+                      <span className="font-mono text-[10px] font-semibold text-[#a89f92]">{lang}</span>
+                      <div className="flex items-center gap-1">
                         <button
                           type="button"
-                          className="ai-code-btn"
+                          className="bg-white/5 hover:bg-white/10 text-[#e5ded2] px-2 py-0.5 rounded text-[10.5px] flex items-center gap-1 cursor-pointer border-0 transition-colors"
                           onClick={() => handleCopyCode(codeString, blockId)}
                           title="Copy code"
                         >
-                          {isCopied ? <Check size={11} className="text-green" /> : <Copy size={11} />}
+                          {isCopied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
                           <span>{isCopied ? 'Copied' : 'Copy'}</span>
                         </button>
                         <button
                           type="button"
-                          className="ai-code-btn primary"
+                          className="bg-brand hover:bg-brand-hover text-white px-2 py-0.5 rounded text-[10.5px] flex items-center gap-1 cursor-pointer border-0 transition-colors font-medium"
                           onClick={() => insertAtCursor(codeString)}
                           title="Insert at Monaco cursor"
                         >
@@ -419,7 +421,7 @@ export const AiPanel: React.FC = () => {
                         </button>
                       </div>
                     </div>
-                    <pre className="ai-code-pre">
+                    <pre className="p-2.5 overflow-x-auto text-[11.5px] font-mono text-[#e5ded2] leading-relaxed m-0">
                       <code>{codeString}</code>
                     </pre>
                   </div>
@@ -427,7 +429,7 @@ export const AiPanel: React.FC = () => {
               }
 
               return (
-                <code className="ai-inline-code" {...props}>
+                <code className="font-mono text-[11.5px] bg-sky-500/10 text-sky-700 px-1 py-0.5 rounded border border-sky-500/20" {...props}>
                   {children}
                 </code>
               );
@@ -445,18 +447,18 @@ export const AiPanel: React.FC = () => {
     : 'AI';
 
   return (
-    <div className="sidebar-ai-panel">
+    <div className="flex flex-col h-full bg-sidebar overflow-hidden select-none">
       {/* Header */}
-      <div className="sidebar-header">
-        <div className="sidebar-header-left">
-          <span className="sidebar-title">{modelShortName}</span>
+      <div className="h-[38px] px-3 bg-sidebar border-b border-border-subtle flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-text-primary tracking-wide uppercase">{modelShortName}</span>
         </div>
 
-        <div className="sidebar-actions">
+        <div className="flex items-center gap-1">
           {activeMode === 'chat' ? (
             <button
               type="button"
-              className="icon-btn"
+              className="text-text-muted hover:text-text-primary p-1 rounded hover:bg-card cursor-pointer border-0 bg-transparent transition-colors"
               onClick={clearChat}
               title="Clear Chat History"
             >
@@ -465,7 +467,7 @@ export const AiPanel: React.FC = () => {
           ) : (
             <button
               type="button"
-              className="icon-btn"
+              className="text-text-muted hover:text-text-primary p-1 rounded hover:bg-card cursor-pointer border-0 bg-transparent transition-colors"
               onClick={clearAgentLogs}
               title="Clear Agent Run History"
             >
@@ -475,7 +477,7 @@ export const AiPanel: React.FC = () => {
 
           <button
             type="button"
-            className="icon-btn"
+            className="text-text-muted hover:text-text-primary p-1 rounded hover:bg-card cursor-pointer border-0 bg-transparent transition-colors"
             onClick={() => setSettingsModalOpen(true)}
             title="Configure AI Keys & Models"
           >
@@ -485,17 +487,21 @@ export const AiPanel: React.FC = () => {
       </div>
 
       {/* Mode Switcher: Agent Mode vs Copilot Chat */}
-      <div className="ai-panel-mode-switcher">
+      <div className="flex p-1 gap-1 bg-card/60 border-b border-border-subtle shrink-0">
         <button
           type="button"
-          className={`ai-mode-btn agent ${activeMode === 'agent' ? 'active' : ''}`}
+          className={`flex-1 py-1 text-xs font-medium rounded text-center transition-all cursor-pointer border-0 ${
+            activeMode === 'agent' ? 'bg-card text-text-primary font-semibold shadow-xs' : 'bg-transparent text-text-muted hover:text-text-primary'
+          }`}
           onClick={() => setActiveMode('agent')}
         >
           <span>Agent Mode</span>
         </button>
         <button
           type="button"
-          className={`ai-mode-btn ${activeMode === 'chat' ? 'active' : ''}`}
+          className={`flex-1 py-1 text-xs font-medium rounded text-center transition-all cursor-pointer border-0 ${
+            activeMode === 'chat' ? 'bg-card text-text-primary font-semibold shadow-xs' : 'bg-transparent text-text-muted hover:text-text-primary'
+          }`}
           onClick={() => setActiveMode('chat')}
         >
           <span>Copilot Chat</span>
@@ -505,25 +511,25 @@ export const AiPanel: React.FC = () => {
       {/* ================= AGENT MODE VIEW ================= */}
       {activeMode === 'agent' && (
         <>
-          <div className="agent-feed">
+          <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2.5 min-h-0 select-text">
             {/* Initial Welcome & Preset Tasks */}
             {agentLogs.length === 0 && !isAgentRunning && (
-              <div className="agent-welcome-card">
-                <div className="agent-welcome-title">
-                  <Bot size={16} className="text-amber" />
+              <div className="bg-card border border-border-subtle rounded-lg p-3 text-xs flex flex-col gap-2">
+                <div className="flex items-center gap-2 font-semibold text-text-primary">
+                  <Bot size={16} className="text-amber-600" />
                   <span>ElseWhere Autonomous Agent</span>
                 </div>
-                <div className="agent-welcome-desc">
+                <div className="text-text-secondary leading-relaxed">
                   The agent plans multi-step tasks, surgically edits workspace files, runs compilation tests, and repairs LaTeX errors automatically.
                 </div>
 
-                <div className="agent-presets-title">Quick Agent Goals</div>
-                <div className="agent-preset-grid">
+                <div className="font-semibold text-text-primary text-[11px] mt-1 uppercase tracking-wider">Quick Agent Goals</div>
+                <div className="flex flex-col gap-1.5">
                   {agentPresets.map((preset, idx) => (
                     <button
                       key={idx}
                       type="button"
-                      className="agent-preset-chip"
+                      className="text-left p-1.5 px-2 rounded bg-card-hover hover:bg-black/5 border border-border-subtle text-text-secondary hover:text-text-primary text-xs cursor-pointer transition-colors"
                       onClick={() => handleAgentStart(preset.goal)}
                     >
                       <span>{preset.label}</span>
@@ -535,7 +541,7 @@ export const AiPanel: React.FC = () => {
 
             {/* User Message in a box */}
             {currentGoal && (
-              <div className="agent-user-box">
+              <div className="bg-card border border-border-subtle rounded-lg p-2.5 text-xs text-text-primary font-medium">
                 {currentGoal}
               </div>
             )}
@@ -544,7 +550,7 @@ export const AiPanel: React.FC = () => {
             {agentLogs.map((step) => {
               const responseText = step.completedSummary;
               return (
-                <div key={step.stepIndex} className="agent-step-container">
+                <div key={step.stepIndex} className="flex flex-col gap-1.5">
                   {/* Tool Invocations: Rendered as clean summary rows matching the AI IDE style */}
                   {step.toolCalls && step.toolCalls.map((tc) => {
                     if (tc.name === 'edit_file' || tc.name === 'write_file') {
@@ -575,7 +581,7 @@ export const AiPanel: React.FC = () => {
 
                   {/* Clean Agent Response without any subheading or title */}
                   {responseText && (
-                    <div className="agent-response-box">
+                    <div className="bg-card/70 border border-border-subtle rounded-lg p-2.5 text-xs text-text-primary">
                       {renderContent(responseText, `agent-step-${step.stepIndex}`)}
                     </div>
                   )}
@@ -585,8 +591,8 @@ export const AiPanel: React.FC = () => {
 
             {/* Error Message */}
             {agentError && (
-              <div className="ai-warning-banner">
-                <AlertCircle size={14} className="text-red" />
+              <div className="flex items-center gap-2 p-2 bg-rose-500/10 border border-rose-500/20 rounded-md text-xs text-rose-700">
+                <AlertCircle size={14} className="text-rose-600" />
                 <span>{agentError}</span>
               </div>
             )}
@@ -596,14 +602,14 @@ export const AiPanel: React.FC = () => {
 
           {/* Running Status Footer */}
           {isAgentRunning && (
-            <div className="agent-running-footer">
-              <div className="agent-running-status">
-                <Loader2 size={13} className="spin text-amber" />
+            <div className="flex items-center justify-between px-3 py-1.5 bg-card border-t border-border-subtle text-xs">
+              <div className="flex items-center gap-2 text-text-secondary text-xs">
+                <Loader2 size={13} className="animate-spin text-amber-500" />
                 <span>Agent running (Step {currentStep}/{maxSteps})...</span>
               </div>
               <button
                 type="button"
-                className="btn-stop-agent"
+                className="bg-rose-600 hover:bg-rose-500 text-white text-xs px-2.5 py-1 rounded flex items-center gap-1 cursor-pointer transition-colors border-0"
                 onClick={stopAgent}
               >
                 <Square size={11} className="inline mr-1" />
@@ -624,9 +630,9 @@ export const AiPanel: React.FC = () => {
           />
 
           {/* Agent Goal Input Composer */}
-          <div className="ai-panel-composer">
+          <div className="p-2 bg-sidebar border-t border-border-subtle shrink-0 flex flex-col gap-1.5">
             <textarea
-              className="ai-panel-textarea"
+              className="w-full bg-card border border-border-subtle focus:border-brand rounded-md p-2 text-xs text-text-primary resize-none outline-none font-sans placeholder:text-text-muted leading-relaxed"
               placeholder="Ask anything, @ to mention, / for actions..."
               value={agentGoalInput}
               onChange={(e) => setAgentGoalInput(e.target.value)}
@@ -635,15 +641,15 @@ export const AiPanel: React.FC = () => {
               disabled={isAgentRunning}
             />
 
-            <div className="ai-panel-composer-footer">
-              <span className="ai-context-hint">
+            <div className="flex items-center justify-between">
+              <span className="text-[10.5px] text-text-muted font-mono truncate max-w-[150px]">
                 {modelShortName}
               </span>
 
               {isAgentRunning ? (
                 <button
                   type="button"
-                  className="btn-stop-agent"
+                  className="bg-rose-600 hover:bg-rose-500 text-white text-xs px-2.5 py-1 rounded flex items-center gap-1 cursor-pointer transition-colors border-0"
                   onClick={stopAgent}
                 >
                   <Square size={12} />
@@ -652,7 +658,7 @@ export const AiPanel: React.FC = () => {
               ) : (
                 <button
                   type="button"
-                  className="ai-panel-send-btn"
+                  className="bg-brand hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium px-3 py-1 rounded flex items-center gap-1 cursor-pointer transition-colors border-0"
                   onClick={() => handleAgentStart()}
                   disabled={!agentGoalInput.trim()}
                   title="Run Autonomous Agent (Enter)"
@@ -670,12 +676,12 @@ export const AiPanel: React.FC = () => {
       {activeMode === 'chat' && (
         <>
           {/* Quick Action Chips */}
-          <div className="ai-panel-quick-chips">
+          <div className="flex gap-1.5 p-2 overflow-x-auto overflow-y-hidden border-b border-border-subtle shrink-0">
             {quickChips.map((chip, idx) => (
               <button
                 key={idx}
                 type="button"
-                className="quick-chip"
+                className="whitespace-nowrap px-2 py-0.5 rounded-full text-[11px] font-medium bg-card hover:bg-card-hover border border-border-subtle text-text-secondary hover:text-text-primary cursor-pointer transition-colors shrink-0"
                 onClick={() => {
                   const docContext = activeFile ? activeFile.content : undefined;
                   sendChatMessage(chip.prompt, docContext);
@@ -687,24 +693,30 @@ export const AiPanel: React.FC = () => {
           </div>
 
           {/* Messages Scroll Area */}
-          <div className="ai-panel-messages">
+          <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 min-h-0 select-text">
             {chatMessages.map((msg) => (
-              <div key={msg.id} className={`ai-message-row ${msg.role}`}>
-                <div className="ai-message-bubble">
-                  <div className="ai-bubble-meta">
-                    <span className="ai-sender-name">
+              <div key={msg.id} className="flex flex-col gap-1">
+                <div
+                  className={`rounded-lg p-2.5 text-xs max-w-[92%] ${
+                    msg.role === 'user'
+                      ? 'self-end bg-brand text-white [&_.ai-markdown-content]:text-white'
+                      : 'self-start bg-card border border-border-subtle text-text-primary'
+                  }`}
+                >
+                  <div className="text-[10px] opacity-70 mb-1 font-semibold">
+                    <span className="font-semibold">
                       {msg.role === 'user' ? 'You' : provider === 'groq' ? 'Groq LPU' : 'Gemini'}
                     </span>
                   </div>
-                  <div className="ai-bubble-body">{renderContent(msg.content, msg.id)}</div>
+                  <div>{renderContent(msg.content, msg.id)}</div>
                 </div>
               </div>
             ))}
 
             {isChatLoading && (
-              <div className="ai-message-row assistant">
-                <div className="ai-message-bubble loading">
-                  <Loader2 size={13} className="spin text-blue" />
+              <div className="flex flex-col gap-1">
+                <div className="self-start bg-card border border-border-subtle text-text-primary rounded-lg p-2.5 text-xs flex items-center gap-2">
+                  <Loader2 size={13} className="animate-spin text-sky-600" />
                   <span>Generating response with {provider === 'groq' ? 'Groq LPU' : 'Gemini'}...</span>
                 </div>
               </div>
@@ -725,10 +737,10 @@ export const AiPanel: React.FC = () => {
           />
 
           {/* Chat Input Composer */}
-          <div className="ai-panel-composer">
+          <div className="p-2 bg-sidebar border-t border-border-subtle shrink-0 flex flex-col gap-1.5">
             <textarea
               ref={textareaRef}
-              className="ai-panel-textarea"
+              className="w-full bg-card border border-border-subtle focus:border-brand rounded-md p-2 text-xs text-text-primary resize-none outline-none font-sans placeholder:text-text-muted leading-relaxed"
               placeholder="Ask anything, @ to mention, / for actions..."
               value={inputPrompt}
               onChange={(e) => setInputPrompt(e.target.value)}
@@ -737,14 +749,14 @@ export const AiPanel: React.FC = () => {
               disabled={isChatLoading}
             />
 
-            <div className="ai-panel-composer-footer">
-              <span className="ai-context-hint">
+            <div className="flex items-center justify-between">
+              <span className="text-[10.5px] text-text-muted font-mono truncate max-w-[150px]">
                 {modelShortName}
               </span>
 
               <button
                 type="button"
-                className="ai-panel-send-btn"
+                className="bg-brand hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium px-3 py-1 rounded flex items-center gap-1 cursor-pointer transition-colors border-0"
                 onClick={handleChatSend}
                 disabled={!inputPrompt.trim() || isChatLoading}
                 title="Send prompt (Enter)"

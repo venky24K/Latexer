@@ -237,16 +237,18 @@ export const FileTree: React.FC = () => {
     return (
       <div
         key={file.path}
-        className={`file-item ${isActive ? 'active' : ''}`}
+        className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-all duration-150 group ${
+          isActive ? 'bg-brand/12 text-brand font-medium' : 'text-text-secondary hover:bg-card hover:text-text-primary'
+        }`}
         onClick={() => setActiveFile(file.path)}
       >
-        <div className="file-item-main">
+        <div className="flex items-center gap-2 overflow-hidden truncate flex-1">
           {getFileIcon(file.path, file.isBinary)}
           {isEditing ? (
             <input
               type="text"
               autoFocus
-              className="inline-input"
+              className="bg-card border border-brand text-text-primary text-xs font-mono px-1 py-0.5 rounded outline-none w-full"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               onKeyDown={(e) => {
@@ -257,25 +259,27 @@ export const FileTree: React.FC = () => {
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
-            <span className="file-name" title={file.path}>
+            <span className="text-[12.5px] truncate flex items-center" title={file.path}>
               {displayName}
-              {file.path === 'main.tex' && <span className="main-tag">main</span>}
+              {file.path === 'main.tex' && (
+                <span className="text-[9.5px] bg-brand/15 text-brand px-1.5 py-0.2 rounded ml-1.5 font-bold">main</span>
+              )}
             </span>
           )}
         </div>
 
         {/* Action buttons on hover */}
         {!isEditing && file.path !== 'main.tex' && (
-          <div className="file-hover-actions">
+          <div className="hidden group-hover:flex items-center gap-1">
             <button
-              className="file-action-btn"
+              className="text-text-muted hover:text-text-primary p-0.5 rounded cursor-pointer transition-colors"
               onClick={(e) => handleStartRename(file.path, e)}
               title="Rename"
             >
               <Edit2 size={12} />
             </button>
             <button
-              className="file-action-btn delete"
+              className="text-text-muted hover:text-accent-red p-0.5 rounded cursor-pointer transition-colors"
               onClick={(e) => handleDelete(file.path, e)}
               title="Delete"
             >
@@ -290,27 +294,27 @@ export const FileTree: React.FC = () => {
   const totalFileCount = Object.keys(files).length;
 
   return (
-    <aside className="file-tree-sidebar">
+    <aside className="flex flex-col h-full w-full min-w-[200px] border-r border-border-subtle select-none overflow-hidden bg-sidebar">
       {/* File Explorer Header */}
-      <div className="sidebar-header">
-        <span className="sidebar-title">PROJECT FILES</span>
-        <div className="sidebar-actions">
+      <div className="h-9 px-3 flex items-center justify-between border-b border-border-subtle shrink-0">
+        <span className="text-[11px] font-bold tracking-wider text-text-muted">PROJECT FILES</span>
+        <div className="flex items-center gap-1">
           <button
-            className="icon-btn"
+            className="text-text-muted hover:text-text-primary hover:bg-card p-1 rounded cursor-pointer transition-all"
             onClick={handleStartCreate}
             title="New File (.tex, .bib, etc.)"
           >
             <Plus size={14} />
           </button>
           <button
-            className="icon-btn"
+            className="text-text-muted hover:text-text-primary hover:bg-card p-1 rounded cursor-pointer transition-all"
             onClick={handleStartCreateFolder}
             title="New Folder"
           >
             <FolderPlus size={14} />
           </button>
           <button
-            className="icon-btn"
+            className="text-text-muted hover:text-text-primary hover:bg-card p-1 rounded cursor-pointer transition-all"
             onClick={() => fileInputRef.current?.click()}
             title="Upload Figure / Image / Asset"
           >
@@ -327,15 +331,15 @@ export const FileTree: React.FC = () => {
       </div>
 
       {/* File List */}
-      <div className="file-list">
+      <div className="flex-1 overflow-y-auto p-1.5 flex flex-col gap-0.5">
         {/* Inline root file creation input */}
         {isCreatingFile && (
-          <div className="file-item-create">
-            <FileText size={14} className="tree-icon icon-tex" />
+          <div className="flex items-center gap-2 px-2 py-1 bg-card rounded border border-brand">
+            <FileText size={14} className="text-accent-blue" />
             <input
               type="text"
               autoFocus
-              className="inline-input"
+              className="bg-transparent border-none text-text-primary text-xs font-mono outline-none w-full"
               placeholder="filename.tex"
               value={newFileName}
               onChange={(e) => setNewFileName(e.target.value)}
@@ -350,12 +354,12 @@ export const FileTree: React.FC = () => {
 
         {/* Inline root folder creation input */}
         {isCreatingFolder && (
-          <div className="file-item-create">
-            <Folder size={14} className="tree-icon text-amber" />
+          <div className="flex items-center gap-2 px-2 py-1 bg-card rounded border border-brand">
+            <Folder size={14} className="text-accent-amber" />
             <input
               type="text"
               autoFocus
-              className="inline-input"
+              className="bg-transparent border-none text-text-primary text-xs font-mono outline-none w-full"
               placeholder="folder_name"
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
@@ -374,33 +378,38 @@ export const FileTree: React.FC = () => {
           const children = folderFilesMap[folder] || [];
 
           return (
-            <div key={folder} className="tree-folder-group">
-              <div className="folder-item" onClick={() => toggleFolder(folder)}>
-                <div className="folder-item-left">
+            <div key={folder} className="mb-0.5">
+              <div
+                className="flex items-center justify-between px-2 py-1 rounded cursor-pointer text-text-secondary hover:bg-card hover:text-text-primary transition-all group"
+                onClick={() => toggleFolder(folder)}
+              >
+                <div className="flex items-center gap-1.5 truncate">
                   {isCollapsed ? (
-                    <ChevronRight size={13} className="folder-caret" />
+                    <ChevronRight size={13} className="text-text-muted" />
                   ) : (
-                    <ChevronDown size={13} className="folder-caret" />
+                    <ChevronDown size={13} className="text-text-muted" />
                   )}
                   {isCollapsed ? (
-                    <Folder size={14} className="tree-icon text-amber" />
+                    <Folder size={14} className="text-accent-amber" />
                   ) : (
-                    <FolderOpen size={14} className="tree-icon text-amber" />
+                    <FolderOpen size={14} className="text-accent-amber" />
                   )}
-                  <span className="folder-name">{folder}</span>
-                  <span className="folder-count-badge">{children.length}</span>
+                  <span className="text-xs font-semibold">{folder}</span>
+                  <span className="text-[9.5px] font-bold bg-[rgba(44,38,30,0.06)] text-text-muted px-1.5 py-0.2 rounded-full">
+                    {children.length}
+                  </span>
                 </div>
 
-                <div className="folder-item-actions">
+                <div className="hidden group-hover:flex items-center gap-1">
                   <button
-                    className="file-action-btn"
+                    className="text-text-muted hover:text-text-primary p-0.5 rounded cursor-pointer transition-colors"
                     onClick={(e) => handleStartCreateInFolder(folder, e)}
                     title={`Create file inside ${folder}`}
                   >
                     <Plus size={11} />
                   </button>
                   <button
-                    className="file-action-btn delete"
+                    className="text-text-muted hover:text-accent-red p-0.5 rounded cursor-pointer transition-colors"
                     onClick={(e) => handleDeleteFolder(folder, e)}
                     title={`Delete folder ${folder}`}
                   >
@@ -411,14 +420,14 @@ export const FileTree: React.FC = () => {
 
               {/* Folder Children */}
               {!isCollapsed && (
-                <div className="folder-children">
+                <div className="pl-3 border-l border-border-subtle ml-3 mb-0.5 flex flex-col gap-0.5">
                   {creatingInFolder === folder && (
-                    <div className="file-item-create">
-                      <FileText size={13} className="tree-icon icon-tex" />
+                    <div className="flex items-center gap-2 px-2 py-1 bg-card rounded border border-brand">
+                      <FileText size={13} className="text-accent-blue" />
                       <input
                         type="text"
                         autoFocus
-                        className="inline-input"
+                        className="bg-transparent border-none text-text-primary text-xs font-mono outline-none w-full"
                         placeholder="new_file.tex"
                         value={folderNewFileName}
                         onChange={(e) => setFolderNewFileName(e.target.value)}
@@ -443,9 +452,9 @@ export const FileTree: React.FC = () => {
       </div>
 
       {/* Footer Info */}
-      <div className="sidebar-footer">
-        <span className="file-count-badge">{totalFileCount} files</span>
-        <span className="root-indicator">Root: main.tex</span>
+      <div className="h-8 border-t border-border-subtle flex items-center justify-between px-2.5 text-[11px] text-text-muted bg-sidebar shrink-0">
+        <span>{totalFileCount} files</span>
+        <span>Root: main.tex</span>
       </div>
     </aside>
   );

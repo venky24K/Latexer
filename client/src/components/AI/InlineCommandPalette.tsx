@@ -51,45 +51,45 @@ export const InlineCommandPalette: React.FC = () => {
   const hasSelection = inlineSelection && inlineSelection.selectedText.trim().length > 0;
 
   return (
-    <div className="inline-palette-overlay" onClick={closeInlineCommand}>
+    <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] z-30 flex items-start justify-center pt-16" onClick={closeInlineCommand}>
       <div
-        className={`inline-palette-card ${isInlineLoading ? 'generating' : ''}`}
+        className={`w-[90%] max-w-[540px] bg-sidebar border border-border-light rounded-xl shadow-2xl p-3.5 flex flex-col gap-2.5 animate-scaleUp ${isInlineLoading ? 'ring-1 ring-accent-blue/40' : ''}`}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <div className="inline-palette-header">
-          <div className="inline-badge">
-            <Sparkles size={14} className="text-blue" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-text-primary">
+            <Sparkles size={14} className="text-accent-blue" />
             <span>{provider === 'groq' ? 'Groq AI Edit' : 'Gemini AI Edit'}</span>
-            <span className="kbd-shortcut">⌘K</span>
+            <span className="text-[10px] bg-[rgba(44,38,30,0.08)] px-1.5 py-0.5 rounded text-text-secondary font-mono">⌘K</span>
           </div>
 
-          <button className="inline-close-btn" onClick={closeInlineCommand}>
+          <button className="text-text-muted hover:text-text-primary p-0.5 rounded cursor-pointer transition-colors" onClick={closeInlineCommand}>
             <X size={14} />
           </button>
         </div>
 
         {hasSelection ? (
-          <div className="inline-context-snippet">
-            <span className="context-label">Selected code:</span>
-            <code>
+          <div className="text-[11px] text-text-muted flex items-center gap-1.5 overflow-hidden">
+            <span className="shrink-0">Selected code:</span>
+            <code className="text-accent-blue font-mono bg-accent-blue/10 border border-accent-blue/20 px-1 py-0.5 rounded truncate">
               {inlineSelection.selectedText.length > 80
                 ? `${inlineSelection.selectedText.slice(0, 80)}...`
                 : inlineSelection.selectedText}
             </code>
           </div>
         ) : (
-          <div className="inline-context-snippet">
-            <span className="context-label">Insert at cursor position</span>
+          <div className="text-[11px] text-text-muted">
+            <span>Insert at cursor position</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="inline-form">
-          <div className="inline-input-row">
+        <form onSubmit={handleSubmit} className="flex flex-col">
+          <div className="flex items-center gap-2 bg-card border border-border-light rounded-md px-3 py-1.5 focus-within:border-accent-blue">
             <input
               ref={inputRef}
               type="text"
-              className="inline-palette-input"
+              className="flex-1 bg-transparent border-none text-text-primary text-[12.5px] outline-none placeholder:text-text-muted"
               placeholder={
                 hasSelection
                   ? 'e.g. "Rephrase formally", "Make this a booktabs table", "Add inline math"...'
@@ -102,7 +102,7 @@ export const InlineCommandPalette: React.FC = () => {
 
             <button
               type="submit"
-              className="inline-submit-btn"
+              className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold bg-accent-blue hover:bg-accent-blue/90 text-white cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shrink-0"
               disabled={!inlineInstruction.trim() || isInlineLoading}
             >
               {isInlineLoading ? (
@@ -120,8 +120,8 @@ export const InlineCommandPalette: React.FC = () => {
           </div>
         </form>
 
-        <div className="inline-palette-footer">
-          <span>Press <strong>Enter</strong> to apply • <strong>Esc</strong> to dismiss</span>
+        <div className="text-[10.5px] text-text-muted">
+          <span>Press <strong className="font-semibold text-text-primary">Enter</strong> to apply • <strong className="font-semibold text-text-primary">Esc</strong> to dismiss</span>
         </div>
       </div>
     </div>

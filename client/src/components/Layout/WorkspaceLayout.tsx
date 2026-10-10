@@ -74,14 +74,14 @@ export const WorkspaceLayout: React.FC = () => {
   };
 
   return (
-    <main className="latexer-workspace">
+    <main className="flex-1 relative overflow-hidden flex flex-row">
       {/* Far-Left Activity Bar (VS Code style vertical icon rail) */}
       <ActivityBar />
 
       {/* Primary Resizable Workspace Panel Group */}
       <Group
         orientation="horizontal"
-        className="workspace-panels"
+        className="flex-1 !h-full w-full"
         id="latexer-panels-group"
         onLayoutChanged={(layout) => {
           if (layout.sidebar && layout.editor && layout.preview) {
@@ -97,12 +97,12 @@ export const WorkspaceLayout: React.FC = () => {
               defaultSize={`${panelSizes[0]}%`}
               minSize="10%"
               maxSize="40%"
-              className="panel-sidebar"
+              className="bg-sidebar h-full overflow-hidden"
             >
               {renderActiveSidebarContent()}
             </Panel>
 
-            <Separator className="resize-handle" />
+            <Separator className="w-[3px] bg-border-subtle hover:bg-brand transition-colors cursor-col-resize z-10 active:bg-brand" />
           </>
         )}
 
@@ -112,14 +112,16 @@ export const WorkspaceLayout: React.FC = () => {
             id="editor"
             defaultSize={viewMode === 'editor-only' ? '100%' : `${panelSizes[1]}%`}
             minSize={viewMode === 'editor-only' ? '100%' : '20%'}
-            className="panel-editor"
+            className="bg-editor h-full overflow-hidden"
           >
             <MonacoLatexEditor />
           </Panel>
         )}
 
         {/* Separator between Editor and PDF Preview (shown when both are visible in split mode) */}
-        {viewMode === 'split' && <Separator className="resize-handle" />}
+        {viewMode === 'split' && (
+          <Separator className="w-[3px] bg-border-subtle hover:bg-brand transition-colors cursor-col-resize z-10 active:bg-brand" />
+        )}
 
         {/* Panel 3: Hardware-Accelerated PDF.js Preview */}
         {viewMode !== 'editor-only' && (
@@ -127,7 +129,7 @@ export const WorkspaceLayout: React.FC = () => {
             id="preview"
             defaultSize={viewMode === 'preview-only' ? '100%' : `${panelSizes[2]}%`}
             minSize={viewMode === 'preview-only' ? '100%' : '20%'}
-            className="panel-preview"
+            className="bg-preview h-full overflow-hidden"
           >
             <PdfViewer />
           </Panel>

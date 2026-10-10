@@ -491,10 +491,10 @@ export const MonacoLatexEditor: React.FC = () => {
   const language = activeFilePath.endsWith('.bib') ? 'latex' : activeFilePath.endsWith('.json') ? 'json' : 'latex';
 
   return (
-    <div className="editor-container">
+    <div className="relative flex-1 flex flex-col h-full bg-editor overflow-hidden">
       {/* Multi-File Tab Pills Bar */}
-      <div className="editor-tab-bar">
-        <div className="editor-tabs-scroll" role="tablist">
+      <div className="h-[38px] bg-sidebar border-b border-border-subtle flex items-center justify-between px-2 select-none z-[4] shrink-0">
+        <div className="flex items-center gap-1 overflow-x-auto overflow-y-hidden flex-1 min-w-0 h-full" role="tablist">
           {openTabs.map((tabPath) => {
             const isActive = tabPath === activeFilePath;
             const isPending = Boolean(pendingEdits[tabPath]);
@@ -503,7 +503,11 @@ export const MonacoLatexEditor: React.FC = () => {
                 key={tabPath}
                 role="tab"
                 aria-selected={isActive}
-                className={`editor-tab-pill ${isActive ? 'active' : ''} ${isPending ? 'pending' : ''}`}
+                className={`group flex items-center gap-1.5 px-3 py-1 h-[28px] rounded text-xs font-medium cursor-pointer transition-all border border-transparent select-none shrink-0 ${
+                  isActive
+                    ? 'bg-card text-text-primary border-border-subtle shadow-xs'
+                    : 'text-text-muted hover:text-text-primary hover:bg-card/50'
+                } ${isPending ? 'border-b-2 border-b-amber-500!' : ''}`}
                 onClick={() => setActiveFile(tabPath)}
                 onAuxClick={(e) => {
                   if (e.button === 1) {
@@ -514,16 +518,16 @@ export const MonacoLatexEditor: React.FC = () => {
                 title={isPending ? `${tabPath} (Pending AI changes)` : tabPath}
               >
                 {getTabIcon(tabPath)}
-                <span className="tab-label">{tabPath}</span>
+                <span className="truncate max-w-[140px]">{tabPath}</span>
                 {isPending && (
-                  <span className="tab-pending-badge" title="Pending changes to review">
+                  <span className="text-[9px] font-bold text-amber-600 bg-amber-500/15 px-1 py-0.5 rounded ml-0.5" title="Pending changes to review">
                     M
                   </span>
                 )}
                 {openTabs.length > 1 && (
                   <button
                     type="button"
-                    className="tab-close-btn"
+                    className="opacity-0 group-hover:opacity-100 hover:bg-black/10 text-text-muted hover:text-text-primary p-0.5 rounded transition-all cursor-pointer border-0 bg-transparent ml-0.5"
                     onClick={(e) => {
                       e.stopPropagation();
                       closeTab(tabPath);
@@ -538,47 +542,51 @@ export const MonacoLatexEditor: React.FC = () => {
           })}
         </div>
 
-        <div className="editor-actions-hint">
+        <div className="flex items-center gap-2 shrink-0 ml-2">
           <button
             type="button"
-            className={`copilot-toggle-badge ${ghostTextEnabled ? 'active' : ''}`}
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium border cursor-pointer transition-all ${
+              ghostTextEnabled
+                ? 'bg-amber-500/10 text-amber-700 border-amber-500/30 font-semibold'
+                : 'bg-transparent text-text-muted border-border-subtle hover:text-text-primary hover:bg-card'
+            }`}
             onClick={() => toggleGhostText()}
             title={`Copilot Ghost Text: ${ghostTextEnabled ? 'Active (Tab to accept, ⌥\\ to trigger)' : 'Disabled'}. Click to toggle.`}
           >
-            <Zap size={11} className={ghostTextEnabled ? 'text-amber' : 'text-muted'} />
+            <Zap size={11} className={ghostTextEnabled ? 'text-amber-500' : 'text-text-muted'} />
             <span>{isGhostTextLoading ? 'Thinking...' : ghostTextEnabled ? 'Copilot (Tab)' : 'Copilot Off'}</span>
           </button>
 
           <button
             type="button"
-            className="ai-hint-badge"
+            className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium border border-sky-500/30 bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 cursor-pointer transition-all"
             onClick={() => openInlineCommand('', null)}
             title="Open AI Inline Command Palette (Cmd+K)"
           >
-            <Sparkles size={11} className="text-blue" />
+            <Sparkles size={11} className="text-sky-600" />
             <span>⌘K AI Edit</span>
           </button>
-          <span className="compile-hint-badge">⌘↵ compile</span>
+          <span className="text-[11px] text-text-muted px-1.5 py-0.5 rounded bg-black/5 font-mono select-none hidden sm:inline-block">⌘↵ compile</span>
         </div>
       </div>
 
       {/* Editor Canvas or Binary Image Preview or Diff Editor */}
       {activeFile?.isBinary ? (
-        <div className="binary-preview-container">
-          <div className="binary-header">
-            <ImageIcon size={14} className="text-green" />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 bg-editor">
+          <div className="flex items-center gap-2 text-xs font-medium text-text-secondary mb-4">
+            <ImageIcon size={14} className="text-emerald-600" />
             <span>{activeFile.path} (Image Preview)</span>
           </div>
-          <div className="binary-body">
+          <div className="max-w-full max-h-[80%] flex items-center justify-center bg-white p-4 rounded border border-border-subtle shadow-md">
             <img
               src={`data:image/png;base64,${activeFile.content}`}
               alt={activeFile.path}
-              className="binary-image"
+              className="max-w-full max-h-full object-contain"
             />
           </div>
         </div>
       ) : pendingEdit ? (
-        <div className="diff-editor-container">
+        <div className="relative flex-1 w-full h-full overflow-hidden">
           <DiffEditor
             height="100%"
             language={language}
@@ -615,34 +623,34 @@ export const MonacoLatexEditor: React.FC = () => {
           />
 
           {/* Floating Action Toolbar Overlay */}
-          <div className="diff-floating-toolbar">
+          <div className="absolute top-3 right-6 z-20 flex items-center gap-1.5 bg-card/95 backdrop-blur-md border border-border-light px-2.5 py-1.5 rounded-lg shadow-lg shadow-black/15">
             <button
               type="button"
-              className="diff-action-btn accept"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white border-0 px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm transition-all"
               onClick={handleAcceptCurrent}
               title="Accept Changes (⌘Enter)"
             >
               <Check size={12} />
               <span>Accept Changes</span>
-              <span className="diff-shortcut">⌘⏎</span>
+              <span className="opacity-70 text-[10px] ml-0.5 font-mono">⌘⏎</span>
             </button>
 
             <button
               type="button"
-              className="diff-action-btn reject"
+              className="bg-rose-600 hover:bg-rose-500 text-white border-0 px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm transition-all"
               onClick={handleRejectCurrent}
               title="Reject Changes (⌘Backspace)"
             >
               <X size={12} />
               <span>Reject</span>
-              <span className="diff-shortcut">⌘⌫</span>
+              <span className="opacity-70 text-[10px] ml-0.5 font-mono">⌘⌫</span>
             </button>
 
-            <div className="diff-toolbar-divider" />
+            <div className="w-px h-4 bg-border-light mx-1" />
 
             <button
               type="button"
-              className="diff-nav-btn"
+              className="bg-transparent hover:bg-card-hover border border-border-subtle text-text-secondary hover:text-text-primary px-1.5 py-0.5 rounded text-[11px] font-mono cursor-pointer transition-all"
               onClick={() => {
                 if (diffEditorRef.current?.goToDiff) {
                   diffEditorRef.current.goToDiff('previous');
@@ -655,7 +663,7 @@ export const MonacoLatexEditor: React.FC = () => {
 
             <button
               type="button"
-              className="diff-nav-btn"
+              className="bg-transparent hover:bg-card-hover border border-border-subtle text-text-secondary hover:text-text-primary px-1.5 py-0.5 rounded text-[11px] font-mono cursor-pointer transition-all"
               onClick={() => {
                 if (diffEditorRef.current?.goToDiff) {
                   diffEditorRef.current.goToDiff('next');
@@ -668,22 +676,22 @@ export const MonacoLatexEditor: React.FC = () => {
 
             {editedFilePaths.length > 1 && (
               <>
-                <div className="diff-toolbar-divider" />
-                <div className="diff-files-pager">
+                <div className="w-px h-4 bg-border-light mx-1" />
+                <div className="flex items-center gap-1 text-[11px] text-text-secondary">
                   <button
                     type="button"
-                    className="diff-pager-arrow"
+                    className="bg-transparent hover:bg-card-hover text-text-secondary hover:text-text-primary p-0.5 rounded cursor-pointer border-0 transition-all"
                     onClick={handlePrevEditedFile}
                     title="Previous edited file"
                   >
                     <ChevronLeft size={13} />
                   </button>
-                  <span className="diff-pager-text">
+                  <span className="font-mono px-1">
                     Edited files {currentEditIndex + 1}/{editedFilePaths.length}
                   </span>
                   <button
                     type="button"
-                    className="diff-pager-arrow"
+                    className="bg-transparent hover:bg-card-hover text-text-secondary hover:text-text-primary p-0.5 rounded cursor-pointer border-0 transition-all"
                     onClick={handleNextEditedFile}
                     title="Next edited file"
                   >
@@ -695,7 +703,7 @@ export const MonacoLatexEditor: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="editor-wrapper">
+        <div className="relative flex-1 w-full h-full overflow-hidden">
           <InlineCommandPalette />
           <Editor
             height="100%"

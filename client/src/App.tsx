@@ -17,7 +17,7 @@ export function App() {
   }, [initProject, initAi]);
 
   return (
-    <div className="latexer-app">
+    <div className="flex flex-col h-screen w-screen bg-app text-text-primary overflow-hidden font-sans">
       <TopNav />
       <WorkspaceLayout />
 

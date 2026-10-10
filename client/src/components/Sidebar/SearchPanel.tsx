@@ -101,29 +101,29 @@ export const SearchPanel: React.FC = () => {
   };
 
   return (
-    <div className="sidebar-search-panel">
+    <div className="flex flex-col h-full w-full overflow-hidden select-none">
       {/* Panel Header */}
-      <div className="sidebar-header">
-        <span className="sidebar-title">SEARCH IN PROJECT</span>
+      <div className="h-9 px-3 flex items-center justify-between border-b border-border-subtle shrink-0">
+        <span className="text-[11px] font-bold tracking-wider text-text-muted">SEARCH IN PROJECT</span>
       </div>
 
       {/* Search Input Controls */}
-      <div className="search-controls-container">
-        <div className="search-input-row">
+      <div className="p-2 flex flex-col gap-1.5 border-b border-border-subtle bg-card-hover">
+        <div className="flex items-center gap-1">
           <button
             type="button"
-            className="search-toggle-btn"
+            className="bg-transparent border-none text-text-muted cursor-pointer p-0.5 flex items-center"
             onClick={() => setIsReplaceOpen(!isReplaceOpen)}
             title={isReplaceOpen ? 'Hide Replace' : 'Toggle Replace'}
           >
             {isReplaceOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
 
-          <div className="search-field-wrapper">
-            <Search size={13} className="search-icon" />
+          <div className="flex-1 flex items-center bg-card border border-border-subtle focus-within:border-accent-blue rounded px-1.5 py-0.5 gap-1.5">
+            <Search size={13} className="text-text-muted shrink-0" />
             <input
               type="text"
-              className="search-input"
+              className="flex-1 bg-transparent border-none text-text-primary text-xs outline-none min-w-0"
               placeholder="Search..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -132,7 +132,9 @@ export const SearchPanel: React.FC = () => {
 
             <button
               type="button"
-              className={`search-option-btn ${matchCase ? 'active' : ''}`}
+              className={`p-0.5 rounded cursor-pointer transition-colors ${
+                matchCase ? 'bg-accent-blue/20 text-accent-blue' : 'text-text-muted hover:text-text-primary hover:bg-[rgba(44,38,30,0.08)]'
+              }`}
               onClick={() => setMatchCase(!matchCase)}
               title="Match Case (Aa)"
             >
@@ -143,12 +145,12 @@ export const SearchPanel: React.FC = () => {
 
         {/* Replace Row */}
         {isReplaceOpen && (
-          <div className="search-input-row replace-row">
-            <div className="search-field-wrapper indent">
-              <Replace size={13} className="search-icon" />
+          <div className="flex items-center gap-1 pl-4">
+            <div className="flex-1 flex items-center bg-card border border-border-subtle focus-within:border-accent-blue rounded px-1.5 py-0.5 gap-1.5">
+              <Replace size={13} className="text-text-muted shrink-0" />
               <input
                 type="text"
-                className="search-input"
+                className="flex-1 bg-transparent border-none text-text-primary text-xs outline-none min-w-0"
                 placeholder="Replace with..."
                 value={replacement}
                 onChange={(e) => setReplacement(e.target.value)}
@@ -156,7 +158,7 @@ export const SearchPanel: React.FC = () => {
 
               <button
                 type="button"
-                className="replace-action-btn"
+                className="bg-accent-blue/15 border border-accent-blue/30 text-accent-blue text-[10px] font-semibold px-1.5 py-0.5 rounded hover:bg-accent-blue/25 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
                 onClick={handleReplaceAll}
                 disabled={!query.trim() || totalMatches === 0}
                 title="Replace All Occurrences Across Files"
@@ -168,8 +170,8 @@ export const SearchPanel: React.FC = () => {
         )}
 
         {replacedNotice && (
-          <div className="search-notice">
-            <Check size={12} className="text-green" />
+          <div className="flex items-center gap-1.5 text-[11px] text-brand px-1">
+            <Check size={12} className="text-brand" />
             <span>{replacedNotice}</span>
           </div>
         )}
@@ -177,7 +179,7 @@ export const SearchPanel: React.FC = () => {
 
       {/* Results Summary */}
       {query.trim() && (
-        <div className="search-results-summary">
+        <div className="px-3 py-1.5 text-[11px] text-text-muted border-b border-border-subtle bg-card-hover">
           {totalMatches > 0 ? (
             <span>
               {totalMatches} {totalMatches === 1 ? 'match' : 'matches'} in {searchResults.length}{' '}
@@ -190,33 +192,35 @@ export const SearchPanel: React.FC = () => {
       )}
 
       {/* Results List */}
-      <div className="search-results-list">
+      <div className="flex-1 overflow-y-auto py-1.5">
         {searchResults.map(({ file, matches }) => {
           const isCollapsed = collapsedFiles[file];
           return (
-            <div key={file} className="search-file-group">
+            <div key={file} className="mb-1">
               <div
-                className="search-file-header"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-semibold text-text-secondary hover:bg-card-hover hover:text-text-primary cursor-pointer select-none"
                 onClick={() => toggleFileCollapse(file)}
                 role="button"
                 tabIndex={0}
               >
                 {isCollapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
-                <FileText size={13} className="tree-icon icon-tex" />
-                <span className="search-file-path">{file}</span>
-                <span className="search-match-count">{matches.length}</span>
+                <FileText size={13} className="text-accent-blue" />
+                <span className="flex-1 truncate">{file}</span>
+                <span className="text-[10px] bg-[rgba(44,38,30,0.08)] px-1.5 py-0.5 rounded-full text-text-muted">
+                  {matches.length}
+                </span>
               </div>
 
               {!isCollapsed && (
-                <div className="search-file-matches">
+                <div className="flex flex-col">
                   {matches.map((m, idx) => (
                     <div
                       key={idx}
-                      className="search-match-item"
+                      className="flex items-center gap-2 py-0.5 pl-6 pr-3 cursor-pointer text-[11.5px] text-text-muted hover:bg-card hover:text-text-primary transition-all"
                       onClick={() => handleMatchClick(m)}
                     >
-                      <span className="search-line-number">{m.line}</span>
-                      <span className="search-match-snippet">{m.preview}</span>
+                      <span className="font-mono text-[10.5px] text-accent-blue min-w-[18px]">{m.line}</span>
+                      <span className="truncate">{m.preview}</span>
                     </div>
                   ))}
                 </div>
